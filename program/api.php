@@ -17,11 +17,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-function get_current_user_id(): int
+function get_current_user_id(): ?int
 {
     // If a real auth layer provides `$_SESSION['user_id']`, use it.
-    // Otherwise return 0 (anonymous). Replace when auth.php is available.
-    return isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    // Otherwise return null (anonymous). db.php expects null for unauthenticated users.
+    return isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
 }
 
 // Minimal inline fallback for content validation. Replace with real `security.php` later.
@@ -53,9 +53,11 @@ try {
         // --- A. いいね処理 (Toggle Like) ---
         case 'like':
             $comment_id = isset($_POST['comment_id']) ? (int)$_POST['comment_id'] : 0;
+
             $user_id = get_current_user_id();
 
             if ($comment_id <= 0) throw new Exception("Comment ID is required.");
+            if ($user_id === null) throw new Exception("Authentication required.");
 
             // db.php の toggle_like を使う (like_type は仮に 1)
             $res = toggle_like($user_id, $comment_id, 1);
@@ -77,6 +79,7 @@ try {
             $user_id = get_current_user_id();
 
             if ($survey_id <= 0 || trim($raw_text) === '') throw new Exception("Invalid data.");
+            if ($user_id === null) throw new Exception("Authentication required.");
 
             // セキュリティチェック
             if (!isValidContent($raw_text)) {
