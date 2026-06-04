@@ -28,7 +28,11 @@ $data = [];
 while ($row = pg_fetch_assoc($result)) {
     $labels[] = $row[$group_by];
     $data[] = $row["count"];
+    $survey_spec_str = $row["survey_spec"]; 
 }
+
+$spec_data = json_decode($survey_spec_str, true);
+$chart_type = $spec_data['questions'][0]['result_display'] ?? 'bar';
 
 // JSON化（Chart.js用）
 $labels_json = json_encode($labels);
@@ -193,21 +197,38 @@ function likeComment(commentId) {
 //====================================
 // コメント再描画
 //====================================
-function renderComments(comments) {
+function escapeHTML(str) {
+    if (!str) return "";
+    return str.replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+}
 
-    let html = "";
+function renderComments(comments) { [cite: 56]
 
-    comments.forEach(c => {
+    let html = ""; [cite: 56]
+
+    comments.forEach(c => { [cite: 57]
+        // 投稿直後のバグ・セキュリティ漏れを防ぐためにエスケープ処理を適用
+        const safeName = escapeHTML(c.account_name || 'ゲスト利用者');
+        const safeComment = escapeHTML(c.comment).replace(/\n/g, '<br>');
+        const commentId = parseInt(c.comment_id);
+        const likeCount = parseInt(c.like_count || 0);
+
         html += `
-        <div>
-            <p>${c.account_name}</p>
-            <p>${c.comment}</p>
+        <div style="border:1px solid #000; margin:10px; padding:10px">
+            <p><strong>${safeName}</strong></p>
+            <p>${safeComment}</p>
+            <button onclick="likeComment(${commentId})">
+                👍 <span id="like-${commentId}">${likeCount}</span>
+            </button>
         </div>
         `;
-    });
+    }); [cite: 57]
 
-    document.getElementById("comment-list").innerHTML = html;
-}
+    document.getElementById("comment-list").innerHTML = html; [cite: 58]
 
 </script>
 
