@@ -23,7 +23,7 @@ $surveys = get_all_survey_titles();
 
 // ログインしている場合、期限切れかつ未通知のアンケートを取得
 if ($user_id) {
-    $notifications = get_finished_surveys_for_notification($user_id);  //データベースから得られる通知すべきアンケート
+    $notifications = get_expired_surveys_to_notify($user_id);  //データベースから得られる通知すべきアンケート
 }
 ?>
 
