@@ -13,6 +13,16 @@ function checkWord(string $user_input, int $max_length = 50):bool{
     try{
         $normalize = [" ","　",".","．","。",",","，","、"];
         $target = $user_input;//$_POST["taxt"];
+        $target = Normalizer::normalize(
+            $target,
+            Normalizer::FORM_KC
+        );//入力の正規化
+
+        $target = preg_replace(
+            '/[\x{200B}\x{200C}\x{200D}\x{2060}\x{FEFF}]/u',
+            '',
+            $target
+        );//特殊文字の除去
         if (($n = mb_strlen($target)) > (int)$max_length){
             writeLog(__FILE__."::".__FUNCTION__, "WARNING", "文字列長超過:$n(制限:$max_length)");
             return false;
