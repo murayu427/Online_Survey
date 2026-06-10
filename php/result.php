@@ -1,6 +1,6 @@
 <?php
-session_start();
-
+require_once __DIR__ . '/auth.php';
+start_sess();
 // DB接続
 $conn = pg_connect("host=localhost dbname=test user=postgres password=pass");
 
@@ -134,8 +134,11 @@ new Chart(ctx, {
 <!-- ⑥ CSV / PDF ダウンロード -->
 <!-- ================================== -->
 
-<a href="download.php?id=<?= $survey_id ?>" target="_blank">
-    CSV/PDFダウンロード
+<a href="download.php?survey_id=<?= $survey_id ?>&format=csv" target="_blank">
+    CSV形式でダウンロード
+</a>
+<a href="download.php?survey_id=<?= $survey_id ?>&format=pdf" target="_blank">
+    PDF形式でダウンロード
 </a>
 
 ---
