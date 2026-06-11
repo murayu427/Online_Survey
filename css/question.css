@@ -1,0 +1,23 @@
+body{
+    padding: 10% 10%;
+    background-color: aqua;
+}
+body h1{
+    font-size: xx-large;
+}
+body h2{
+    font-size: large;
+}
+
+.question{
+    display: block;
+    padding: 20px 20px;
+    width: auto;
+    height: auto;
+    border: solid 2px;
+    border-color: black;
+}
+.option{
+    display: block;
+    padding: 10px;
+}

@@ -69,6 +69,7 @@ if(is_null($r)){
     $len = count($json["questions"]);
     echo "<form method='post' action='?question_id={$q_key}' id='main-form'>";
     echo "<input type='hidden' name='csrf_token' value='".htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8')."'>";
+    $id_cnt = 0;//チェックボックス等のid用変数
     for ($i=0; $i<$len; $i++){
         echo "<div>";
         echo "<h2>質問".($i+1).":".$json["questions"][$i]["label"]."</h2>";
@@ -83,8 +84,11 @@ if(is_null($r)){
                 ){
                     $checked = 'checked';
                 }
-                echo "<input type='checkbox' name='q{$i}[]' value='{$item}' {$checked}>";
-                echo "<label>{$item}</label><br>";
+                $id_cnt+=1;
+                echo "<div class='option'>";
+                echo "<input type='checkbox' name='q{$i}[]' value='{$item}' id='{$id_cnt}' {$checked}>";
+                echo "<label for='{$id_cnt}'>{$item}</label>";
+                echo "</div>";
             }
         }elseif($json["questions"][$i]["type"]=="single"){
             foreach($json["questions"][$i]["options"] as $item){
@@ -93,8 +97,11 @@ if(is_null($r)){
                 if ($current === $item){
                     $checked = 'checked';
                 }
-                echo "<input type='radio' name='q{$i}' value='{$item}' required {$checked}>";
-                echo "<label>".$item."</label><br>";
+                $id_cnt+=1;
+                echo "<div class='option'>";
+                echo "<input type='radio' name='q{$i}' value='{$item}' id='{$id_cnt}' required {$checked}>";
+                echo "<label for='{$id_cnt}'>".$item."</label>";
+                echo "</div>";
             }
         }elseif($json["questions"][$i]["type"]=="text"){
             $value="";
@@ -110,18 +117,29 @@ if(is_null($r)){
     if(isset($_SESSION["user_id"])){
 
     }else{
+        echo "<div>";
         echo "<h2>性別を選択してください</h2>";
+        echo "<div class='option'>";
         echo "<input type='checkbox' name='Q_gender' value='man'>";
-        echo "<label>男性</label><br>";
+        echo "<label>男性</label>";
+        echo "</div>";
+        echo "<div class='option'>";
         echo "<input type='checkbox' name='Q_gender' value='woman'>";
-        echo "<label>女性</label><br>";
+        echo "<label>女性</label>";
+        echo "</div>";
+        echo "<div class='option'>";
         echo "<input type='checkbox' name='Q_gender' value='other'>";
-        echo "<label>その他</label><br>";
+        echo "<label>その他</label>";
+        echo "</div>";
+        echo "<div class='option'>";
         echo "<input type='checkbox' name='Q\gender' value='doNotAnswer'>";
-        echo "<label>回答しない</label><br>";
+        echo "<label>回答しない</label>";
+        echo "</div>";
+        echo "</div><div>";
         echo "<h2>生年月日を入力してください</h2>";
         $max_date = date('Y-m-d');
         echo "<input type='date' name='birthday' min='1900-01-01' max='{$max_date}' required><br>";
+        echo "</div>";
     }
     echo "<button type='submit'>送信</button>";
     echo "</form>";
