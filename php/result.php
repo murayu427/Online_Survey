@@ -136,8 +136,8 @@ new Chart(ctx, {
         <p><strong><?= htmlspecialchars($row["account_name"] ?? $row["username"] ?? 'ゲスト利用者') ?></strong></p>
         <p><?= nl2br(htmlspecialchars($row["comment"])) ?></p>
 
-        <button onclick="addLike(<?= $row['comment_id'] ?>)">
-            👍 <span id="like-<?= $row['comment_id'] ?>">
+        <button onclick="toggleLike(<?= $row['comment_id'] ?>)">
+            👍 <span id="like-count-<?= $row['comment_id'] ?>">
                 <?= $row["like_count"] ?? 0 ?>
             </span>
         </button>
