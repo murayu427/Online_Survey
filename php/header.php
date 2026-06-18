@@ -1,33 +1,47 @@
 <?php
-// セッション開始
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once 'db.php'; 
+/**
+ * header.php
+ * 認証・データベース連携および共通ヘッダー
+ */
 
-// --- 既読処理の統合（JavaScriptからのリクエストをここで受け取る） ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'mark_read') {
-    // リクエストボディからIDリストを取得
-    $input = json_decode(file_get_contents('php://input'), true);
-    $ids = $input['ids'] ?? [];
-    
-    // データベースのフラグを更新
-    foreach ($ids as $id) {
-        update_notification_flag((int)$id);
+// 1. 外部ファイルの読み込み
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/db.php'; 
+
+// 2. セッション開始（auth.phpの関数を使用）
+start_sess();
+
+// 3. CSRFトークンを生成
+$csrf_token = generate_csrf();
+
+// 4. 既読処理（header.php内で安全に完結）
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // ログイン済みか確認（auth.phpのセッションを利用）
+    if (isset($_SESSION['user_id'])) {
+        $json_input = file_get_contents('php://input');
+        $input = json_decode($json_input, true);
+
+        if (isset($input['action']) && $input['action'] === 'mark_read') {
+            $ids = $input['ids'] ?? [];
+            foreach ($ids as $id) {
+                update_notification_flag((int)$id);
+            }
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'success']);
+            exit; // 処理終了
+        }
     }
-    exit; // 処理後はHTMLを出力させず終了する
 }
-// ------------------------------------------------------------
 
+// 5. ユーザー情報とデータの準備
 $user_id = $_SESSION['user_id'] ?? null;
-$notifications = [];
+$notifications = $user_id ? get_expired_surveys_to_notify($user_id) : [];
 $surveys = get_all_survey_titles();
-
-// ログインしている場合、期限切れかつ未通知のアンケートを取得
-if ($user_id) {
-    $notifications = get_expired_surveys_to_notify($user_id);  //データベースから得られる通知すべきアンケート
-}
 ?>
 
 <header class="w-full bg-[#1e3a8a] text-white fixed top-0 left-0 h-16 z-[9999] shadow-lg">
+  <input type="hidden" id="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+
   <div class="max-w-6xl mx-auto h-full flex items-center justify-between px-6">
     <div class="flex items-center gap-4">
       <a href="index.php" class="text-2xl hover:text-blue-300 transition-colors"><i class="fa-solid fa-house"></i></a>
@@ -77,6 +91,7 @@ if ($user_id) {
 <script>
 const surveyData = <?php echo json_encode($surveys); ?>;
 const notiIds = <?php echo json_encode(array_column($notifications, 'survey_id')); ?>;
+const csrfToken = document.getElementById('csrf_token').value;
 
 document.addEventListener('DOMContentLoaded', () => {
   const notiBtn = document.getElementById('notificationBtn');
@@ -87,24 +102,33 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchPopup = document.getElementById('searchPopup');
   const resultsContainer = document.getElementById('search-results-container');
 
+  // 通知ボタンクリックで既読処理を実行
   if(notiBtn) {
     notiBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      // 通知ボタン押下時に自分自身（header.php）へ既読命令を送る
-      if(notiPopup.classList.contains('hidden') && notiIds.length > 0) {
+      if(!notiPopup.classList.contains('hidden')) {
+          notiPopup.classList.add('hidden');
+          return;
+      }
+
+      if(notiIds.length > 0) {
           fetch('header.php', {
               method: 'POST',
-              headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-              body: 'action=mark_read&ids=' + encodeURIComponent(JSON.stringify({ ids: notiIds }))
-          }).then(() => {
-              if(notiCount) notiCount.classList.add('hidden');
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'X-CSRF-Token': csrfToken // トークンをヘッダーに含める
+              },
+              body: JSON.stringify({ action: 'mark_read', ids: notiIds })
+          }).then(res => res.json()).then(data => {
+              if(data.status === 'success' && notiCount) notiCount.classList.add('hidden');
           });
       }
-      notiPopup.classList.toggle('hidden');
+      notiPopup.classList.remove('hidden');
       searchPopup.classList.add('hidden');
     });
   }
 
+  // 検索・UIイベント
   if(closeNotiBtn) {
     closeNotiBtn.addEventListener('click', (e) => {
       e.stopPropagation();
