@@ -132,7 +132,7 @@ async function toggleLike(commentId) {
 
             // キリ番などの条件を満たした場合、音声演出を実行
             if (data.play_voice) {
-                const audio = new Audio('assets/sounds/iine_voice.mp3');
+                const audio = new Audio('assets/iidesune_doukome.mp3');
                 audio.play().catch(e => console.warn('音声再生がブラウザにブロックされました', e));
             }
         }

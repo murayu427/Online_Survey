@@ -3,6 +3,7 @@ require "db.php";
 require_once 'auth.php';
 require_once 'header.php';
 require_once 'security.php';
+require_once 'error.php';
 $q_key = $_GET['question_id'] ?? '';
 
 start_sess();
@@ -30,8 +31,7 @@ echo "<head><link rel='stylesheet' href='../css/question.css'><link rel='stylesh
 
 $r = get_survey_by_key($q_key, "question_key");
 if(is_null($r)){
-    echo("<title>存在しないページ</title>");
-    echo("アンケートは削除されたか未公開です");
+    renderError('存在しないページです',500,'APP','WARNING',Null,'存在しないページ');
 }else{
     $json = $r["survey_spec"];
 

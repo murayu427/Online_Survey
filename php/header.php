@@ -16,21 +16,20 @@ $csrf_token = generate_csrf();
 
 // 4. 既読処理（header.php内で安全に完結）
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // ログイン済みか確認（auth.phpのセッションを利用）
-    if (isset($_SESSION['user_id'])) {
-        $json_input = file_get_contents('php://input');
-        $input = json_decode($json_input, true);
+    // ログイン済みか確認（auth.phpのセッションを利用）\
+    login_check();
+    $json_input = file_get_contents('php://input');
+    $input = json_decode($json_input, true);
 
-        if (isset($input['action']) && $input['action'] === 'mark_read') {
-            $ids = $input['ids'] ?? [];
-            foreach ($ids as $id) {
-                update_notification_flag((int)$id);
-            }
-            header('Content-Type: application/json');
-            echo json_encode(['status' => 'success']);
-            exit; // 処理終了
-        }
-    }
+    if (isset($input['action']) && $input['action'] === 'mark_read') {
+      $ids = $input['ids'] ?? [];
+      foreach ($ids as $id) {
+        update_notification_flag((int)$id);
+      }
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 'success']);
+      exit; // 処理終了
+   }
 }
 
 // 5. ユーザー情報とデータの準備

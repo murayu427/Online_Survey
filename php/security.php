@@ -1,12 +1,11 @@
-<!--
-禁止文字列の検出，文字数制限違反の発見
-@param string $user_input ユーザ入力等の入力値
-@param int $max_length 文字列制限(デフォルトでは50)
-@return bool True：問題なし
-             False：問題あり
-@notice checkWord関数でエラーがあった場合にはfalseが返値される
--->
 <?php
+// 禁止文字列の検出，文字数制限違反の発見
+// @param string $user_input ユーザ入力等の入力値
+// @param int $max_length 文字列制限(デフォルトでは50)
+// @return bool True：問題なし
+//              False：問題あり
+// @notice checkWord関数でエラーがあった場合にはfalseが返値される
+//
 //require "db.php";
 require_once "logger.php";
 function checkWord(string $user_input, int $max_length = 50):bool{

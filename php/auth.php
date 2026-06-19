@@ -62,7 +62,7 @@ function login_check(){
     if(!isset($_SESSION['user_id'])){
         //元のURLを保存してログインページにリダイレクトする
         $_SESSION['return_to'] = $_SERVER['REQUEST_URI']; 
-        header('Location: login.php');
+        header('Location: signin.php');
         exit();
     }
 
@@ -73,7 +73,7 @@ function login_check(){
             //セッションを破棄してログインページにリダイレクトする
             del_sess();
             $_SESSION['return_to'] = $_SERVER['REQUEST_URI'];
-            header('Location: login.php');
+            header('Location: signin.php');
             exit();
         }
     }
