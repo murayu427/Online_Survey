@@ -181,10 +181,10 @@ function insert_survey(int $creator_id, string $title, array $spec, string $star
 function get_surveys_list(int $limit, int $offset): array
 {
     $sql = 'SELECT survey_id, creator_id, title, survey_spec, start_at, end_at, question_key, result_key, is_notified FROM surveys ORDER BY start_at ASC LIMIT :limit OFFSET :offset';
-    $stmt = getPdo()->prepare($sql);
-    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt = executeQuery($sql, [
+        ':limit' => $limit,
+        ':offset' => $offset,
+    ]);
 
     $rows = $stmt->fetchAll();
     foreach ($rows as &$row) {
@@ -201,12 +201,11 @@ function get_surveys_list(int $limit, int $offset): array
 function get_all_survey_titles(): array
 {
     $sql = 'SELECT title FROM surveys';
-    $stmt = getPdo()->prepare($sql);
-    $stmt->execute();
+    $stmt = executeQuery($sql);
     return $stmt->fetchAll(PDO::FETCH_COLUMN);
 }
 
-/*
+/**
  * ホームページのアンケート一覧を取得する
  *
  * @param string $listType  一覧の種類（作成したアンケート / 回答したアンケート / アンケート / 調査結果）
@@ -275,6 +274,8 @@ function get_homepage_survey_list(string $listType, string $sortOrder, ?int $use
             }
             break;
         case 'all':
+            $conditions[] = 's.end_at > NOW()';
+            break;
         default:
             break;
     }
@@ -305,6 +306,50 @@ function get_homepage_survey_list(string $listType, string $sortOrder, ?int $use
             'duration' => $row['duration'],
         ];
     }, $rows);
+}
+
+/**
+ * アンケートの回答期限を延長する
+ * 
+ * @param int $survey_id 対象のアンケートID
+ * @param int $user_id 実行者（作成者）のユーザーID
+ * @param string $new_end_at 新しい終了日時（Y-m-d H:i:s形式）
+ * @return string|null 延長後の日時（Y.m.d H:i形式）、失敗時はnull
+ */
+function extend_survey_deadline(int $survey_id, int $user_id, string $new_end_at): ?string
+{
+    try {
+        // 入力値の妥当性チェック
+        $parsedTime = strtotime($new_end_at);
+        if (!$parsedTime || $parsedTime <= time()) {
+            return null; // 無効または過去の時刻
+        }
+
+        // タイムゾーン対応：明示的にUTCで統一
+        $newEndAtFormatted = date('c', $parsedTime);
+
+        $sql = "UPDATE surveys 
+                SET end_at = :new_end_at::TIMESTAMPTZ,
+                    updated_at = NOW()
+                WHERE survey_id = :survey_id AND creator_id = :user_id
+                RETURNING end_at";
+
+        $stmt = executeQuery($sql, [
+            ':survey_id' => $survey_id,
+            ':user_id'   => $user_id,
+            ':new_end_at' => $newEndAtFormatted,
+        ]);
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($result) {
+            return date('Y.m.d H:i', strtotime($result['end_at']));
+        }
+        
+        return null;
+    } catch (PDOException $e) {
+        renderDbError($e);
+        return null;
+    }
 }
 
 /**

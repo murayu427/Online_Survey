@@ -198,6 +198,43 @@ if ($user) {
         }
     }
 
+    // extend_survey_deadline() のテスト ---
+    // 成功条件: 指定した分数（またはデフォルト10分）だけ、終了日時(end_at)が未来に更新されること。
+    printSection('5c. extend_survey_deadline() のテスト');
+
+    // テスト対象のアンケートを取得（以前のテストで作成した 'expired-q-key' を利用）
+    $targetSurvey = get_survey_by_key('expired-q-key', 'question');
+
+    if ($targetSurvey) {
+        $surveyId = (int)$targetSurvey['survey_id'];
+        $creatorId = (int)$targetSurvey['creator_id'];
+        $oldEndAt = $targetSurvey['end_at'];
+
+        echo "延長前の終了日時: " . date('Y.m.d H:i', strtotime($oldEndAt)) . "<br>";
+
+        // 30分延長をリクエスト
+        $extensionMinutes = 30;
+        $newEndAt = date('Y-m-d H:i:s', strtotime("+$extensionMinutes minutes"));
+        $newTimeFormatted = extend_survey_deadline($surveyId, $creatorId, $newEndAt);
+
+        if ($newTimeFormatted) {
+            echo "extend_survey_deadline() 成功！<br>";
+            echo "返却された新しい日時: " . $newTimeFormatted . "<br>";
+
+            // DBから再度取得して、本当に書き換わっているか検証（プログラムのシートベルト的確認）
+            $updatedSurvey = get_survey_by_key('expired-q-key', 'question');
+            echo "DB上の最新の終了日時: " . date('Y.m.d H:i', strtotime($updatedSurvey['end_at'])) . "<br>";
+
+            if ($newTimeFormatted === date('Y.m.d H:i', strtotime($updatedSurvey['end_at']))) {
+                echo "<span style='color:green;'>結果の一致を確認しました。</span><br>";
+            }
+        } else {
+            echo "<span style='color:red;'>extend_survey_deadline() 失敗</span>（本人確認エラーまたはDBエラー）<br>";
+        }
+    } else {
+        echo "テスト対象のアンケート（expired-q-key）が見つかりません。先に 3. の INSERT を実行してください。";
+    }
+
     // 9. delete_user() のカスケード削除テスト
     //    成功条件: 対象ユーザーを削除すると user, surveys, responses, comments, likes が削除されること。
     printSection('9. delete_user() のカスケード削除テスト');
