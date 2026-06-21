@@ -145,9 +145,13 @@ function renderError(
     $safeMessage = htmlspecialchars($userMessage, ENT_QUOTES, 'UTF-8');
     $safeTitle = htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8');
     header('Content-Type: text/html; charset=UTF-8');
-    echo '<!doctype html><html><head><meta charset="UTF-8"><title>' . $safeTitle . '</title></head><body>';
+    echo '<!doctype html><html><head><meta charset="UTF-8"><title>' . $safeTitle . '</title>';
+    echo '<script>setTimeout(function() {
+            window.location.href = "./index.php";
+        }, 5000); // 5秒後に遷移
+    </script></head><body>';
     echo '<script>window.onload = function() { alert("' . $safeMessage . '"); };</script>';
-    echo '</body></html>';
+    echo '</body></html>';   
     exit;
 }
 
