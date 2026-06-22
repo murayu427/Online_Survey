@@ -9,8 +9,8 @@ $user_id = $_SESSION['user_id'] ?? 1;
 //====================================
 // ① 集計データ取得（グラフ用）
 //====================================
-
-$sql = "SELECT a.answer_value, COUNT(a.*) as count, s.survey_spec
+$responses = get_responses_by_survey_id((int)$survey_id);
+/*$sql = "SELECT a.answer_value, COUNT(a.*) as count, s.survey_spec
         FROM answers a
         JOIN surveys s ON a.survey_id = s.survey_id
         WHERE a.survey_id = :survey_id AND a.question_id = :question_id
@@ -20,19 +20,43 @@ $stmt = executeQuery($sql, [
     ':survey_id'   => $survey_id,
     ':question_id' => $question_id
 ]);
-$chart_rows = $stmt->fetchAll();
+*/
+$sql_spec = "SELECT survey_spec FROM surveys WHERE survey_id = :survey_id";
+$stmt_spec = executeQuery($sql_spec, [':survey_id' => $survey_id]);
+$survey_row = $stmt_spec->fetch();
+$survey_spec_str = $survey_row['survey_spec'] ?? '{}';
+$spec_data = json_decode($survey_spec_str, true);
 
+$counts = [];
+foreach ($responses as $response) {
+    // db.php 側で既に配列化されている回答データを取り出す
+    $answers = $response['answer_data'] ?? [];
+    
+    // ユーザーがこの質問（$question_id）に回答している場合のみ処理
+    if (isset($answers[$question_id])) {
+        $ans = $answers[$question_id];
+        
+        // チェックボックスなどの複数回答（配列）の場合
+        if (is_array($ans)) {
+            foreach ($ans as $a) {
+                // 既に箱があれば+1、無ければ1をセット
+                $counts[$a] = isset($counts[$a]) ? $counts[$a] + 1 : 1;
+            }
+        } 
+        // ラジオボタンやテキストなどの単一回答の場合
+        else {
+            $counts[$ans] = isset($counts[$ans]) ? $counts[$ans] + 1 : 1;
+        }
+    }
+}
 $labels = [];
 $data = [];
-$survey_spec_str = "";
-
-foreach ($chart_rows as $row) {
-    $labels[] = $row["answer_value"];
-    $data[] = $row["count"];
-    $survey_spec_str = $row["survey_spec"]; 
+foreach ($counts as $answer_value => $count) {
+    $labels[] = $answer_value; // 選択肢の名前
+    $data[] = $count;          // 獲得した票数
 }
 
-$spec_data = json_decode($survey_spec_str, true);
+
 $chart_type = 'bar'; // 見つからなかったときの初期値
 
 if (isset($spec_data['questions'])) {
@@ -58,7 +82,7 @@ $data_json = json_encode($data);
 // ② コメント一覧取得
 //====================================
 
-$comment_list_data = getCommentsBySurveyId((int)$survey_id);
+$comment_list_data = get_comments_by_survey_id((int)$survey_id);
 
 ?>
 
