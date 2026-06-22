@@ -1,0 +1,73 @@
+/* readability.css
+   ページ単位の行間・タイポグラフィ改善用スタイル
+*/
+body {
+    line-height: 1.75;
+    font-family: system-ui, -apple-system, "Noto Sans JP", "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    padding-top: 4rem; /* 固定ヘッダ分の余白確保（h-16 相当） */
+}
+
+/* ルート背景を index.php と合わせる */
+html, body {
+    background-color: #1e2d5a;
+}
+
+main {
+    max-width: 64rem;
+    margin: 2rem auto;
+    padding: 1rem;
+    line-height: 1.8;
+}
+
+main p {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    text-indent: 2em; /* タブ風の字下げ */
+}
+
+main li {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    padding-left: 1.25rem; /* 箇条書きの左余白 */
+}
+
+.section-gap {
+    height: 1rem;
+    display:block;
+}
+
+/* 個別ページの背景色（視認性向上） */
+.page-privacy,
+.page-terms {
+    /* index.php の青背景上に薄い白オーバーレイを入れて識別しやすくする */
+    background-color: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid rgba(255,255,255,0.06); /* わずかに目立つ境界 */
+    backdrop-filter: blur(2px); /* 背景を柔らかく見せる */
+}
+
+h1 {
+    font-size: 1.6rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+h2 {
+    font-size: 1.125rem;
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+ul li, ol li {
+    margin-bottom: 0.5rem;
+}
+
+a {
+    text-decoration: underline;
+}
+
+/* フッタの余白調整 */
+footer {
+    padding: 1.5rem 0;
+}
