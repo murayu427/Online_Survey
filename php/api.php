@@ -26,6 +26,11 @@ if (function_exists('start_sess')) {
     session_start();
 }
 
+// エラーハンドラを登録（例外を JSON で整形して返す）
+if (function_exists('registerErrorHandlers')) {
+    registerErrorHandlers();
+}
+
 /**
  * 現在のユーザーIDを返す。未ログインなら null を返す。
  */
@@ -73,7 +78,13 @@ function validate_csrf(): void
         renderApiError('CSRF token missing.', 400);
     }
 
-    if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
+    // セッションは start_sess() で既に開始されている前提
+    if (!isset($_SESSION['csrf_token'])) {
+        renderApiError('CSRF token missing in session.', 400);
+    }
+
+    // auth.php の check_csrf は非API 用に die() を行うためここでは直接比較する
+    if (!hash_equals((string)$_SESSION['csrf_token'], (string)$token)) {
         renderApiError('Invalid CSRF token.', 400);
     }
 }
@@ -87,15 +98,17 @@ function isValidContent(?string $text): bool
     $trimmed = trim($text);
     if ($trimmed === '') return false;
 
-    // security.php に checkWord があれば利用（最大長を大きめに指定）
+    // security.php の checkWord が利用可能ならそれに委譲する（既存の制約を尊重）
     if (function_exists('checkWord')) {
         try {
-            return checkWord($trimmed, 2000);
+            // security.php 側のデフォルト制約をそのまま使う
+            return checkWord($trimmed);
         } catch (Throwable $e) {
             // フォールバックへ
         }
     }
 
+    // 最低限のサイズチェック（非常に長い入力は拒否）
     if (mb_strlen($trimmed) > 2000) return false;
 
     // DB に禁則語テーブルがあれば照合
@@ -142,11 +155,21 @@ try {
 
             $total = isset($res['like_count']) ? (int)$res['like_count'] : 0;
 
+            // NOTE:
+            // もともとは "10のキリ番" でボイスを鳴らす実装だったが、
+            // 将来的にはランダムで約1/10の確率にしたい。
+            // ここではその条件判定をコメントアウトし、
+            // とりあえず「押したら確定で鳴る」挙動にしておく。
+            // (将来の実装例)
+            // $play_voice = (mt_rand(1, 10) === 1);
+
+            $play_voice = true;
+
             echo json_encode([
                 'status' => 'success',
                 'total_likes' => $total,
                 'liked' => $res['liked'] ?? false,
-                'play_voice' => ($total > 0 && $total % 10 === 0)
+                'play_voice' => $play_voice
             ]);
             break;
 
