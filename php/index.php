@@ -624,7 +624,7 @@ try {
                 </div>
                 
                 <div class="illustration-placeholder hero-left-illustration">
-                    <img src="PICTURE_HOME.png" alt="チェックボックスにチェックをつける人">
+                    <img src="../assets/PICTURE_HOME.png" alt="チェックボックスにチェックをつける人">
                 </div>
             </div>
 
@@ -663,7 +663,7 @@ try {
                 </div>
 
                 <div class="illustration-placeholder guide-illustration">
-                    <img src="PICTURE_GUIDE.png" alt="資料を説明する男性">
+                    <img src="../assets/PICTURE_GUIDE.png" alt="資料を説明する男性">
                 </div>
             </div>
         </section>
@@ -677,7 +677,7 @@ try {
                 
                 <div class="survey-block-container">
                     <div class="illustration-placeholder survey-side-illustration">
-                        <img src="PICTURE_MYSURVEY_1.png" alt="会議をするメンバー">
+                        <img src="../assets/PICTURE_MYSURVEY_1.png" alt="会議をするメンバー">
                     </div>
 
                     <div class="survey-scroll-box">
@@ -731,7 +731,7 @@ try {
                 
                 <div class="survey-block-container">
                     <div class="illustration-placeholder survey-side-illustration">
-                        <img src="PICTURE_MYSURVEY_2.png" alt="PC作業をする女性とグラフ">
+                        <img src="../assets/PICTURE_MYSURVEY_2.png" alt="PC作業をする女性とグラフ">
                     </div>
 
                     <div class="survey-scroll-box">
@@ -777,7 +777,7 @@ try {
             
             <div class="survey-block-container">
                 <div class="illustration-placeholder survey-side-illustration">
-                    <img src="PICTURE_SURVEY.png" alt="話し合いをしている二人の男性">
+                    <img src="../assets/PICTURE_SURVEY.png" alt="話し合いをしている二人の男性">
                 </div>
 
                 <div class="survey-scroll-box">
@@ -843,7 +843,7 @@ try {
             
             <div class="survey-block-container">
                 <div class="illustration-placeholder survey-side-illustration">
-                    <img src="PICTURE_RESULTS.png" alt="グラフをもとに発表する男性">
+                    <img src="../assets/PICTURE_RESULTS.png" alt="グラフをもとに発表する男性">
                 </div>
 
                 <div class="survey-scroll-box">
@@ -917,7 +917,7 @@ try {
                 </div>
 
                 <div class="illustration-placeholder member-illustration">
-                    <img src="PICTURE_MEMBER.png" alt="男女複数人のメンバーイラスト">
+                    <img src="../assets/PICTURE_MEMBER.png" alt="男女複数人のメンバーイラスト">
                 </div>
             </div>
         </section>
