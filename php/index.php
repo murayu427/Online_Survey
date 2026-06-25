@@ -624,7 +624,7 @@ try {
                 </div>
                 
                 <div class="illustration-placeholder hero-left-illustration">
-                    <img src="PICTURE_HOME.png" alt="チェックボックスにチェックをつける人">
+                    <img src="../assets/PICTURE_HOME.png" alt="チェックボックスにチェックをつける人">
                 </div>
             </div>
 
@@ -663,7 +663,7 @@ try {
                 </div>
 
                 <div class="illustration-placeholder guide-illustration">
-                    <img src="PICTURE_GUIDE.png" alt="資料を説明する男性">
+                    <img src="../assets/PICTURE_GUIDE.png" alt="資料を説明する男性">
                 </div>
             </div>
         </section>
@@ -677,7 +677,7 @@ try {
                 
                 <div class="survey-block-container">
                     <div class="illustration-placeholder survey-side-illustration">
-                        <img src="PICTURE_MYSURVEY_1.png" alt="会議をするメンバー">
+                        <img src="../assets/PICTURE_MYSURVEY_1.png" alt="会議をするメンバー">
                     </div>
 
                     <div class="survey-scroll-box">
@@ -731,7 +731,7 @@ try {
                 
                 <div class="survey-block-container">
                     <div class="illustration-placeholder survey-side-illustration">
-                        <img src="PICTURE_MYSURVEY_2.png" alt="PC作業をする女性とグラフ">
+                        <img src="../assets/PICTURE_MYSURVEY_2.png" alt="PC作業をする女性とグラフ">
                     </div>
 
                     <div class="survey-scroll-box">
@@ -758,7 +758,7 @@ try {
                                         </div>
                                         <div class="survey-actions">
                                             <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-orange">結果</a>
-                                            <a href="question.php?id=<?php echo h($survey['survey_id']); ?>&mode=edit" class="action-inline-btn btn-edit-green">編集</a>
+                                            <a href="question.php?id=<?php echo h($survey['question_key']); ?>&mode=edit" class="action-inline-btn btn-edit-green">編集</a>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -777,7 +777,7 @@ try {
             
             <div class="survey-block-container">
                 <div class="illustration-placeholder survey-side-illustration">
-                    <img src="PICTURE_SURVEY.png" alt="話し合いをしている二人の男性">
+                    <img src="../assets/PICTURE_SURVEY.png" alt="話し合いをしている二人の男性">
                 </div>
 
                 <div class="survey-scroll-box">
@@ -815,7 +815,7 @@ try {
                                         <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
                                     </div>
                                     <div class="survey-actions">
-                                        <a href="question.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-answer">回答(○月○日~)</a>
+                                        <a href="question.php?id=<?php echo h($survey['question_key']); ?>" class="action-inline-btn btn-answer">回答(○月○日~)</a>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -843,7 +843,7 @@ try {
             
             <div class="survey-block-container">
                 <div class="illustration-placeholder survey-side-illustration">
-                    <img src="PICTURE_RESULTS.png" alt="グラフをもとに発表する男性">
+                    <img src="../assets/PICTURE_RESULTS.png" alt="グラフをもとに発表する男性">
                 </div>
 
                 <div class="survey-scroll-box">
@@ -917,7 +917,7 @@ try {
                 </div>
 
                 <div class="illustration-placeholder member-illustration">
-                    <img src="PICTURE_MEMBER.png" alt="男女複数人のメンバーイラスト">
+                    <img src="../assets/PICTURE_MEMBER.png" alt="男女複数人のメンバーイラスト">
                 </div>
             </div>
         </section>
