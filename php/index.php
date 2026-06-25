@@ -24,8 +24,7 @@ if (!function_exists('h')) {
 }
 
 // ユーザー状態の検知
-#$is_logged_in = isset($_SESSION['user_id']); 
-$is_logged_in = true;
+$is_logged_in = isset($_SESSION['user_id']); 
 $current_user_id = $is_logged_in ? (int)$_SESSION['user_id'] : null;
 
 // サインアウト処理のハンドリング
