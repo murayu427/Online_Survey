@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // 既に認証済みの場合は標準のページ（例: survey_form.php や index.php）へ
 if (isset($_SESSION['user_id'])) {
-    header('Location: survey_form.php');
+    header('Location: index.php');
     exit;
 }
 
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['last_acc'] = time(); // タイムアウト判定用のタイムスタンプ
 
             // 事前に遷移元のURLが記録されていればそこへ、なければ管理画面等へリダイレクト
-            $redirect_url = $_SESSION['return_to'] ?? 'survey_form.php';
+            $redirect_url = $_SESSION['return_to'] ?? 'index.php';
             unset($_SESSION['return_to']); // 使い終わったURLは削除
             header("Location: " . $redirect_url);
             exit;

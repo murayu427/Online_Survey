@@ -22,9 +22,12 @@ if (!$input) {
     exit;
 }
 
-// データの取得（confirm_signup.php ですでにハッシュ化されている前提）
+// データの取得
 $username = $input['username'];
 $hashed_password = $input['password']; 
+
+// ハッシュ化
+$hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
 try {
     // -----------------------------------------------------------------
