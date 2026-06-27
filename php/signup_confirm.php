@@ -39,31 +39,31 @@ $_SESSION['signup_input'] = [
     <title>新規会員登録 - 確認</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">登録内容の確認</h1>
+<body class="bg-[#1E2D5A] flex items-center justify-center min-h-screen">
+    <div class="bg-[#24376F] p-8 rounded-2xl shadow-2xl border border-white/10 w-full max-w-md">
+        <h1 class="text-3xl font-bold mb-8 text-center text-white">登録内容の確認</h1>
         
         <div class="space-y-4 mb-6">
-            <div class="border-b pb-2">
-                <span class="text-sm text-gray-500 block">ユーザー名</span>
-                <span class="text-lg font-medium text-gray-800"><?= htmlspecialchars($username, ENT_QUOTES, 'UTF-8') ?></span>
+            <div class="border-b border-white/10 pb-2">
+                <span class="text-sm text-gray-300 block">ユーザー名</span>
+                <span class="text-lg font-medium text-white"><?= htmlspecialchars($username, ENT_QUOTES, 'UTF-8') ?></span>
             </div>
             <div class="border-b pb-2">
-                <span class="text-sm text-gray-500 block">パスワード</span>
-                <span class="text-lg font-medium text-gray-800">******** (セキュリティのため非表示)</span>
+                <span class="text-sm text-gray-300 block">パスワード</span>
+                <span class="text-lg font-medium text-white">******** (セキュリティのため非表示)</span>
             </div>
             <div class="border-b pb-2">
-                <span class="text-sm text-gray-500 block">利用規約への同意</span>
-                <span class="text-lg font-medium text-green-600">同意済み</span>
+                <span class="text-sm text-gray-300 block">利用規約への同意</span>
+                <span class="text-lg font-medium text-green-400">同意済み</span>
             </div>
         </div>
 
         <form action="signup_complete.php" method="POST" class="flex space-x-4">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($session_token, ENT_QUOTES, 'UTF-8') ?>">
-            <a href="signup.php" class="w-1/2 bg-gray-300 text-center text-gray-700 py-2 rounded hover:bg-gray-400 transition font-medium">
+            <a href="signup.php" class="w-1/2 bg-gray-600 text-center text-white py-2 rounded hover:bg-gray-500 transition font-medium">
                 戻って修正
             </a>
-            <button type="submit" class="w-1/2 bg-green-600 text-white py-2 rounded hover:bg-green-700 transition font-medium">
+            <button type="submit" class="w-1/2 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition font-medium">
                 登録を確定する
             </button>
         </form>
