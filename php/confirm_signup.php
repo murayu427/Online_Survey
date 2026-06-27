@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 送信された csrf_token の整合性を検証
-$posted_token = $_POST['csrf_token'] ?? '';
+$posted_token = $_SESSION['csrf_token'] ?? '';
 $session_token = $_SESSION['csrf_token'] ?? '';
 
 if (empty($posted_token) || $posted_token !== $session_token) {
@@ -15,9 +15,9 @@ if (empty($posted_token) || $posted_token !== $session_token) {
 }
 
 // 入力データの受け取り
-$username = trim($_POST['username'] ?? '');
-$password = $_POST['password'] ?? '';
-$agreed_terms = isset($_POST['agreed_terms']) ? true : false;
+$username = trim($_SESSION['username'] ?? '');
+$password = $_SESSION['password'] ?? '';
+$agreed_terms = isset($_SESSION['agreed_terms']) ? true : false;
 
 // バリデーションチェック（不備があれば入力へ戻す）
 if ($username === '' || $password === '' || !$agreed_terms) {
