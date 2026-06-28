@@ -23,12 +23,23 @@ if (!function_exists('h')) {
     }
 }
 
-// ユーザー状態の検知
-$is_logged_in = isset($_SESSION['user_id']); 
+// 補助関数の定義
+if (!function_exists('login_has_session_cookie_configured')) {
+    function login_has_session_cookie_configured() {
+        return isset($_COOKIE[session_name()]);
+    }
+}
+
+$is_logged_in = (isset($_SESSION) && isset($_SESSION['user_id'])); 
 $current_user_id = $is_logged_in ? (int)$_SESSION['user_id'] : null;
+#$is_logged_in = true;
 
 // サインアウト処理のハンドリング
 if (isset($_GET['action']) && $_GET['action'] === 'signout') {
+    $_SESSION = array(); 
+    if (login_has_session_cookie_configured()) {
+        setcookie(session_name(), '', time() - 42000, '/');
+    }
     del_sess();
     header("Location: index.php");
     exit;
@@ -36,117 +47,137 @@ if (isset($_GET['action']) && $_GET['action'] === 'signout') {
 
 // 退会処理のハンドリング
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_account') {
-    if ($is_logged_in) {
+    if ($is_logged_in && $current_user_id !== null) {
         $delete_success = delete_user($current_user_id);
         if ($delete_success) {
+            $_SESSION = array();
             del_sess();
             header("Location: index.php");
             exit;
         } else {
-            $withdraw_error = "退会処理に失敗しました。システム管理者に連絡してください。";
+            $alert_message = "退会処理に失敗しました。システム管理者に連絡してください。";
         }
     }
 }
 
-// 並べ替えパラメータ検知
-$sort_type = isset($_GET['sort']) ? $_GET['sort'] : 'start';
-
-// パラメータを新関数的 $sortOrder 用にマッピング
-$sort_order = '新着'; 
-if ($sort_type === 'deadline') {
-    $sort_order = '開始期限'; 
-} elseif ($sort_type === 'responses') {
-    $sort_order = '回答数'; 
+// 新しくホームページに戻った時は必ず新着順にする
+$has_any_sort_param = isset($_GET['s_cre']) || isset($_GET['s_ans']) || isset($_GET['s_act']) || isset($_GET['s_res']);
+if (!$has_any_sort_param) {
+    $sort_cre = 'start';
+    $sort_ans = 'start';
+    $sort_act = 'start';
+    $sort_res = 'start';
+} else {
+    $sort_cre = isset($_GET['s_cre']) ? $_GET['s_cre'] : 'start';
+    $sort_ans = isset($_GET['s_ans']) ? $_GET['s_ans'] : 'start';
+    $sort_act = isset($_GET['s_act']) ? $_GET['s_act'] : 'start';
+    $sort_res = isset($_GET['s_res']) ? $_GET['s_res'] : 'start';
 }
 
-// =========================================================================
-// JavaScriptからの延長リクエストを処理するAPIロジック
-// =========================================================================
+function get_sort_order_text($type) {
+    if ($type === 'deadline') return '開始期限'; 
+    if ($type === 'responses') return '回答数';
+    return '新着';
+}
+
+$order_cre = get_sort_order_text($sort_cre);
+$order_ans = get_sort_order_text($sort_ans);
+$order_act = get_sort_order_text($sort_act);
+$order_res = get_sort_order_text($sort_res);
+
+$scroll_pos = isset($_GET['scroll']) ? (float)$_GET['scroll'] : 0;
+
+// 延長APIロジック
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['api']) && $_GET['api'] === 'extend') {
     header('Content-Type: application/json; charset=utf-8');
-    
-    // JS側から送られてくるJSONデータをデコードして取得
     $raw_input = file_get_contents('php://input');
     $input_data = json_decode($raw_input, true);
     
-    // 認証チェック、および必要なパラメータ（survey_id と new_end_at）の存在チェック
     if (!$is_logged_in || !isset($input_data['survey_id']) || !isset($input_data['new_end_at'])) {
         echo json_encode(['success' => false, 'message' => '認証エラーまたはパラメータ不足です。']);
         exit;
     }
     
     $target_survey_id = (int)$input_data['survey_id'];
-    $new_end_at       = $input_data['new_end_at']; // JSから届いた日時文字列
+    $new_end_at       = $input_data['new_end_at'];
     
     try {
-        // db.php に追加された新関数を呼び出して期限を更新
         $updated_time = extend_survey_deadline($target_survey_id, $current_user_id, $new_end_at);
-        
         if ($updated_time) {
-            // 成功時：確定した日時（Y.m.d H:i などの形式）をJSへ返却
             echo json_encode([
                 'success'  => true, 
                 'new_time' => $updated_time,
                 'message'  => "回答期限を {$updated_time} まで延長しました。"
             ]);
         } else {
-            // 失敗時（他人のアンケート、またはバリデーションエラーなど）
-            echo json_encode([
-                'success' => false, 
-                'message' => '期限の更新に失敗しました。'
-            ]);
+            echo json_encode(['success' => false, 'message' => '期限の更新に失敗しました。']);
         }
         exit;
     } catch (Exception $e) {
-        // 例外発生時のログ出力とエラー返却
         error_log("期限延長APIエラー: " . $e->getMessage());
-        echo json_encode([
-            'success' => false, 
-            'message' => 'システムエラーが発生しました。'
-        ]);
+        echo json_encode(['success' => false, 'message' => 'システムエラーが発生しました。']);
         exit;
     }
 }
 
-// ==========================================
 // 100件ごとのページ分割制御ロジック
-// ==========================================
-$page_active = isset($_GET['p_act']) ? max(1, (int)$_GET['p_act']) : 1;
-$page_result = isset($_GET['p_res']) ? max(1, (int)$_GET['p_res']) : 1;
+$page_created  = isset($_GET['p_cre']) ? max(1, (int)$_GET['p_cre']) : 1;
+$page_answered = isset($_GET['p_ans']) ? max(1, (int)$_GET['p_ans']) : 1;
+$page_active   = isset($_GET['p_act']) ? max(1, (int)$_GET['p_act']) : 1;
+$page_result   = isset($_GET['p_res']) ? max(1, (int)$_GET['p_res']) : 1;
 $limit = 100; 
 
-$offset_active = ($page_active - 1) * $limit;
-$offset_result = ($page_result - 1) * $limit;
+$offset_created  = ($page_created - 1) * $limit;
+$offset_answered = ($page_answered - 1) * $limit;
+$offset_active   = ($page_active - 1) * $limit;
+$offset_result   = ($page_result - 1) * $limit;
 
 $created_surveys = [];
 $answered_surveys = [];
 $active_surveys = [];
 $result_surveys = [];
 
+$total_created = 0;
+$total_answered = 0;
+$total_active = 0;
+$total_result = 0;
+
+$total_pages_created  = 1;
+$total_pages_answered = 1;
+$total_pages_active   = 1;
+$total_pages_result   = 1;
+
 try {
-    // 1. ログインユーザー専用データ（第4引数に $limit, 第5引数に $offset_active を渡す）
-    if ($is_logged_in) {
-        $created_surveys  = get_homepage_survey_list('作成したアンケート', $sort_order, $current_user_id, $limit, $offset_active);
-        $answered_surveys = get_homepage_survey_list('回答したアンケート', $sort_order, $current_user_id, $limit, $offset_active);
+    // 1. ログインユーザー専用データ（MY SURVEY）
+    if ($is_logged_in && $current_user_id !== null) {
+        // 作成したアンケート
+        $all_created = get_homepage_survey_list('作成したアンケート', $order_cre, $current_user_id);
+        $total_created = count($all_created);
+        $total_pages_created = (int)ceil($total_created / $limit);
+        if ($total_pages_created < 1) $total_pages_created = 1;
+        $created_surveys = array_slice($all_created, $offset_created, $limit);
+
+        // 回答したアンケート
+        $all_answered = get_homepage_survey_list('回答したアンケート', $order_ans, $current_user_id);
+        $total_answered = count($all_answered);
+        $total_pages_answered = (int)ceil($total_answered / $limit);
+        if ($total_pages_answered < 1) $total_pages_answered = 1;
+        $answered_surveys = array_slice($all_answered, $offset_answered, $limit);
     }
     
-    // 2. 全体公開用アンケート
-    // ① ページ総数を計算するために、まずは上限なし（PHPの最大整数値）で全件数を数える
-    $all_active_surveys = get_homepage_survey_list('アンケート', $sort_order, null, PHP_INT_MAX, 0);
+    // 2. 全体公開用アンケート（SURVEY）
+    $all_active_surveys = get_homepage_survey_list('アンケート', $order_act, null);
     $total_active = count($all_active_surveys);
-    $total_pages_active = ceil($total_active / $limit);
-    
-    // ② 表示用データの取得で、第4引数に $limit, 第5引数に $offset_active を渡す
-    $active_surveys = get_homepage_survey_list('アンケート', $sort_order, null, $limit, $offset_active);
+    $total_pages_active = (int)ceil($total_active / $limit);
+    if ($total_pages_active < 1) $total_pages_active = 1;
+    $active_surveys = array_slice($all_active_surveys, $offset_active, $limit);
 
-    // 3. 全体公開用調査結果
-    // ① 同様にページ総数を計算するために、上限なしで全件数を数える
-    $all_result_surveys = get_homepage_survey_list('調査結果', $sort_order, null, PHP_INT_MAX, 0);
+    // 3. 全体公開用調査結果（RESULTS）
+    $all_result_surveys = get_homepage_survey_list('調査結果', $order_res, null);
     $total_result = count($all_result_surveys);
-    $total_pages_result = ceil($total_result / $limit);
-    
-    // ② 表示用データの取得で、第4引数に $limit, 第5引数に $offset_result を渡す
-    $result_surveys = get_homepage_survey_list('調査結果', $sort_order, null, $limit, $offset_result);
+    $total_pages_result = (int)ceil($total_result / $limit);
+    if ($total_pages_result < 1) $total_pages_result = 1;
+    $result_surveys = array_slice($all_result_surveys, $offset_result, $limit);
 
 } catch (Exception $e) {
     error_log("データ抽出エラー: " . $e->getMessage());
@@ -160,8 +191,8 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ホームページ - 村上製作所</title>
 
-    <link rel="stylesheet" href="../css/question.css">
-    <link rel="stylesheet" href="../css/footer.css">
+    <link rel="stylesheet" href="css/question.css">
+    <link rel="stylesheet" href="css/footer.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
         
@@ -248,7 +279,6 @@ try {
             margin-bottom: 4px;
         }
         
-        /* 💡 楕円ボタンのサイズと配置スタイルを一律固定化（サイズばらつき防止） */
         .oval-btn {
             display: flex;
             align-items: center;
@@ -266,12 +296,11 @@ try {
             color: #000000 !important; 
         }
         .btn-signup { background-color: #33ccff; } 
-        .btn-signin { background-color: #33ccff; } 
+        .btn-signin { background-color: #b7e9f9; } 
         .btn-withdraw { background-color: #ff3333; } 
-        /* 💡 サインアウトボタンの色合いを目立ちすぎない薄めのオレンジに変更 */
-        .btn-signout { background-color: #ff9d66; } 
-        .btn-create { background-color: #d2f9d2; } 
-        .btn-profile { background-color: #e6ccff; } 
+        .btn-signout { background-color: #fb8b85; } 
+        .btn-create { background-color: #b0f5b0; } 
+        .btn-profile { background-color: #cfa3f8; } 
         
         .guide-section h2,
         .survey-section .section-title-area h3,
@@ -345,20 +374,39 @@ try {
             margin-top: 10px; 
             flex-shrink: 0;
         }
+        
         .survey-scroll-box {
             width: 64%; 
             background-color: #ffffff; 
             border-radius: 8px;
-            padding: 40px 20px 20px 20px; 
+            padding: 0; 
             box-sizing: border-box;
+            height: 400px;
             max-height: 400px;
-            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
             position: relative;
             margin-left: auto; 
+            overflow: hidden;
         }
+        
+        .scroll-box-header {
+            padding: 15px 20px 5px 20px;
+            flex-shrink: 0;
+            background-color: #ffffff;
+            position: relative;
+            z-index: 20;
+        }
+
+        .scroll-box-content {
+            padding: 0 20px 20px 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
         .sort-trigger-btn {
             position: absolute;
-            top: 10px;
+            top: 12px;
             right: 15px;
             background-color: #cccccc; 
             border: 1px solid #000000; 
@@ -368,7 +416,7 @@ try {
             cursor: pointer;
             border-radius: 3px;
             font-weight: bold;
-            z-index: 10;
+            z-index: 30;
         }
 
         .survey-list { 
@@ -425,11 +473,11 @@ try {
             font-weight: bold;
             cursor: pointer;
         }
-        .btn-extend { background-color: #33ccff; } 
-        .btn-result-orange { background-color: #ff5500; } 
-        .btn-result-red { background-color: #ff3333; color: #ffffff; } 
+        .btn-extend { background-color: #b7e9f9; } 
+        .btn-result-orange { background-color: #fb8b85; } 
+        .btn-result-red { background-color: #fb8b85; color: #ffffff; } 
         .btn-edit-green { background-color: #d2f9d2; } 
-        .btn-answer { background-color: #33ccff; } 
+        .btn-answer { background-color: #b7e9f9; } 
 
         .alert-time-text {
             color: #ff3333; 
@@ -481,6 +529,7 @@ try {
             margin-top: 0;
             flex-shrink: 0;
         }
+
         .page-top-pink-btn { 
             position: fixed; 
             bottom: 25px; 
@@ -494,7 +543,7 @@ try {
             font-size: 20px; 
             font-weight: bold; 
             cursor: pointer; 
-            z-index: 150; 
+            z-index: 1000; 
             text-align: center; 
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             display: flex;
@@ -505,7 +554,7 @@ try {
         }
         .sort-popup { 
             position: absolute; 
-            top: 38px; 
+            top: 40px; 
             right: 15px; 
             background-color: #ffffff; 
             color: #000000; 
@@ -609,6 +658,14 @@ try {
             border-radius: 4px;
             cursor: pointer;
         }
+        .section-meta-info {
+            font-size: 11px;
+            color: #888888;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed #e5e7eb;
+            padding-bottom: 4px;
+            width: 80%;
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen" style="padding-top: 64px !important;">
@@ -616,8 +673,8 @@ try {
 
     <div class="container flex-grow">
         
-        <div id="liveAlertBar" style="display: none;">
-            ✓ <span id="liveAlertText">メッセージ</span>
+        <div id="liveAlertBar" style="display: <?php echo !empty($alert_message) ? 'block' : 'none'; ?>;">
+            ✓ <span id="liveAlertText"><?php echo h($alert_message); ?></span>
         </div>
 
         <section class="top-hero-section">
@@ -685,46 +742,66 @@ try {
                     </div>
 
                     <div class="survey-scroll-box">
-                        <button type="button" class="sort-trigger-btn">⇄ 並べ替え</button>
-                        
-                        <div class="sort-popup">
-                            <div class="sort-popup-close">×</div>
-                            <div class="sort-option-list">
-                                <button class="sort-option" data-sort-type="start">新着順</button>
-                                <button class="sort-option" data-sort-type="deadline">回答期限が近い順</button>
-                                <button class="sort-option" data-sort-type="responses">回答数が多い順</button>
+                        <div class="scroll-box-header">
+                            <button type="button" class="sort-trigger-btn">⇄ 並べ替え</button>
+                            <div class="sort-popup">
+                                <div class="sort-popup-close">×</div>
+                                <div class="sort-option-list">
+                                    <button class="sort-option" data-sort-param="s_cre" data-page-param="p_cre" data-sort-type="start">新着順</button>
+                                    <button class="sort-option" data-sort-param="s_cre" data-page-param="p_cre" data-sort-type="deadline">回答期限が近い順</button>
+                                    <button class="sort-option" data-sort-param="s_cre" data-page-param="p_cre" data-sort-type="responses">回答数が多い順</button>
+                                </div>
+                            </div>
+                            <?php 
+                                $start_num_cre = $total_created > 0 ? $offset_created + 1 : 0;
+                                $end_num_cre = min($offset_created + $limit, $total_created);
+                            ?>
+                            <div class="section-meta-info">
+                                並び順: <?php echo h($order_cre); ?>順 ｜ 合計: <?php echo $total_created; ?>件 （<?php echo $start_num_cre; ?>-<?php echo $end_num_cre; ?>件表示中）
                             </div>
                         </div>
 
-                        <div class="survey-list">
-                            <?php if (empty($created_surveys)): ?>
-                                <div class="survey-row" style="background-color:#f3f4f6; color:#333;"><span style="font-size:12px;">作成したアンケートはありません。</span></div>
-                            <?php else: ?>
-                                <?php foreach ($created_surveys as $survey): ?>
-                                    <div class="survey-row" id="survey-card-<?php echo h($survey['survey_id']); ?>">
-                                        <div class="survey-info">
-                                            <div class="survey-date">
-                                                締め切り: 
-                                                <span id="date-box-<?php echo h($survey['survey_id']); ?>">
-                                                    <?php echo h(date('Y.m.d H:i', strtotime($survey['deadline'] ?? ''))); ?>
-                                                </span>
-                                                (回答: <?php echo (int)($survey['response_count'] ?? 0); ?>件)
+                        <div class="scroll-box-content">
+                            <div class="survey-list">
+                                <?php if (empty($created_surveys)): ?>
+                                    <div class="survey-row" style="background-color:#f3f4f6; color:#333;"><span style="font-size:12px;">作成したアンケートはありません。</span></div>
+                                <?php else: ?>
+                                    <?php foreach ($created_surveys as $survey): ?>
+                                        <div class="survey-row" id="survey-card-<?php echo h($survey['survey_id']); ?>">
+                                            <div class="survey-info">
+                                                <div class="survey-date">
+                                                    締め切り: 
+                                                    <span id="date-box-<?php echo h($survey['survey_id']); ?>">
+                                                        <?php echo h(date('Y.m.d H:i', strtotime($survey['deadline'] ?? ''))); ?>
+                                                    </span>
+                                                    (回答: <?php echo (int)($survey['response_count'] ?? 0); ?>件)
+                                                </div>
+                                                <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
                                             </div>
-                                            <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
+                                            <div class="survey-actions">
+                                                <button type="button" class="action-inline-btn btn-extend js-extend-btn" 
+                                                        data-survey-id="<?php echo h($survey['survey_id']); ?>"
+                                                        data-survey-title="<?php echo h($survey['title']); ?>">延長</button>
+                                                <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-orange">結果</a>
+                                                <a href="survey_form.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-edit-green">編集</a>
+                                            </div>
                                         </div>
-                                        <div class="survey-actions">
-                                            <button type="button" class="action-inline-btn btn-extend js-extend-btn" 
-                                                    data-survey-id="<?php echo h($survey['survey_id']); ?>"
-                                                    data-survey-title="<?php echo h($survey['title']); ?>">延長</button>
-                                            <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-orange">結果</a>
-                                            <a href="survey_form.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-edit-green">編集</a>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
+                
+                <?php if ($total_pages_created > 1): ?>
+                    <ul class="pagination" style="display:flex; justify-content:center; list-style:none; gap:6px; margin-top:15px; padding:0;">
+                        <?php for ($i = 1; $i <= $total_pages_created; $i++): ?>
+                            <li>
+                                <a href="index.php?p_cre=<?php echo $i; ?>&p_ans=<?php echo $page_answered; ?>&p_act=<?php echo $page_active; ?>&p_res=<?php echo $page_result; ?>&s_cre=<?php echo h($sort_cre); ?>&s_ans=<?php echo h($sort_ans); ?>&s_act=<?php echo h($sort_act); ?>&s_res=<?php echo h($sort_res); ?>" class="js-page-link" style="color:#fff; text-decoration:none; padding:4px 8px; background:<?php echo ($i === $page_created) ? '#33ccff' : 'rgba(255,255,255,0.1)'; ?>; border-radius:4px; font-size:12px;"><?php echo $i; ?></a>
+                            </li>
+                        <?php endfor; ?>
+                    </ul>
+                <?php endif; ?>
             </section>
 
             <section class="survey-section">
@@ -739,37 +816,58 @@ try {
                     </div>
 
                     <div class="survey-scroll-box">
-                        <button type="button" class="sort-trigger-btn">⇄ 並べ替え</button>
-                        
-                        <div class="sort-popup">
-                            <div class="sort-popup-close">×</div>
-                            <div class="sort-option-list">
-                                <button class="sort-option" data-sort-type="start">新着順</button>
-                                <button class="sort-option" data-sort-type="deadline">回答期限が近い順</button>
+                        <div class="scroll-box-header">
+                            <button type="button" class="sort-trigger-btn">⇄ 並べ替え</button>
+                            <div class="sort-popup">
+                                <div class="sort-popup-close">×</div>
+                                <div class="sort-option-list">
+                                    <button class="sort-option" data-sort-param="s_ans" data-page-param="p_ans" data-sort-type="start">新着順</button>
+                                    <button class="sort-option" data-sort-param="s_ans" data-page-param="p_ans" data-sort-type="deadline">回答期限が近い順</button>
+                                    <button class="sort-option" data-sort-param="s_ans" data-page-param="p_ans" data-sort-type="responses">回答数が多い順</button>
+                                </div>
+                            </div>
+                            <?php 
+                                $start_num_ans = $total_answered > 0 ? $offset_answered + 1 : 0;
+                                $end_num_ans = min($offset_answered + $limit, $total_answered);
+                            ?>
+                            <div class="section-meta-info">
+                                並び順: <?php echo h($order_ans); ?>順 ｜ 合計: <?php echo $total_answered; ?>件 （<?php echo $start_num_ans; ?>-<?php echo $end_num_ans; ?>件表示中）
                             </div>
                         </div>
 
-                        <div class="survey-list">
-                            <?php if (empty($answered_surveys)): ?>
-                                <div class="survey-row" style="background-color:#f3f4f6; color:#333;"><span style="font-size:12px;">過去に回答したアンケートはありません。</span></div>
-                            <?php else: ?>
-                                <?php foreach ($answered_surveys as $survey): ?>
-                                    <div class="survey-row">
-                                        <div class="survey-info">
-                                            <div class="survey-date">完了日: <?php echo h(date('Y.m.d', strtotime($survey['deadline'] ?? ''))); ?></div>
-                                            <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
-                                            <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
+                        <div class="scroll-box-content">
+                            <div class="survey-list">
+                                <?php if (empty($answered_surveys)): ?>
+                                    <div class="survey-row" style="background-color:#f3f4f6; color:#333;"><span style="font-size:12px;">過去に回答したアンケートはありません。</span></div>
+                                <?php else: ?>
+                                    <?php foreach ($answered_surveys as $survey): ?>
+                                        <div class="survey-row">
+                                            <div class="survey-info">
+                                                <div class="survey-date">完了日: <?php echo h(date('Y.m.d', strtotime($survey['deadline'] ?? ''))); ?></div>
+                                                <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
+                                                <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
+                                            </div>
+                                            <div class="survey-actions">
+                                                <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-orange">結果</a>
+                                                <a href="question.php?id=<?php echo h($survey['survey_id']); ?>&mode=edit" class="action-inline-btn btn-edit-green">編集</a>
+                                            </div>
                                         </div>
-                                        <div class="survey-actions">
-                                            <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-orange">結果</a>
-                                            <a href="question.php?id=<?php echo h($survey['question_key']); ?>&mode=edit" class="action-inline-btn btn-edit-green">編集</a>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
+                
+                <?php if ($total_pages_answered > 1): ?>
+                    <ul class="pagination" style="display:flex; justify-content:center; list-style:none; gap:6px; margin-top:15px; padding:0;">
+                        <?php for ($i = 1; $i <= $total_pages_answered; $i++): ?>
+                            <li>
+                                <a href="index.php?p_cre=<?php echo $page_created; ?>&p_ans=<?php echo $i; ?>&p_act=<?php echo $page_active; ?>&p_res=<?php echo $page_result; ?>&s_cre=<?php echo h($sort_cre); ?>&s_ans=<?php echo h($sort_ans); ?>&s_act=<?php echo h($sort_act); ?>&s_res=<?php echo h($sort_res); ?>" class="js-page-link" style="color:#fff; text-decoration:none; padding:4px 8px; background:<?php echo ($i === $page_answered) ? '#33ccff' : 'rgba(255,255,255,0.1)'; ?>; border-radius:4px; font-size:12px;"><?php echo $i; ?></a>
+                            </li>
+                        <?php endfor; ?>
+                    </ul>
+                <?php endif; ?>
             </section>
         <?php endif; ?>
 
@@ -785,45 +883,56 @@ try {
                 </div>
 
                 <div class="survey-scroll-box">
-                    <button type="button" class="sort-trigger-btn">⇄ 並べ替え</button>
-                    
-                    <div class="sort-popup">
-                        <div class="sort-popup-close">×</div>
-                        <div class="sort-option-list">
-                            <button class="sort-option" data-sort-type="start">新着順</button>
-                            <button class="sort-option" data-sort-type="deadline">回答期限が近い順</button>
-                            <button class="sort-option" data-sort-type="responses">回答数が多い順</button>
+                    <div class="scroll-box-header">
+                        <button type="button" class="sort-trigger-btn">⇄ 並べ替え</button>
+                        <div class="sort-popup">
+                            <div class="sort-popup-close">×</div>
+                            <div class="sort-option-list">
+                                <button class="sort-option" data-sort-param="s_act" data-page-param="p_act" data-sort-type="start">新着順</button>
+                                <button class="sort-option" data-sort-param="s_act" data-page-param="p_act" data-sort-type="deadline">回答期限が近い順</button>
+                                <button class="sort-option" data-sort-param="s_act" data-page-param="p_act" data-sort-type="responses">回答数が多い順</button>
+                            </div>
+                        </div>
+                        <?php 
+                            $start_num = $total_active > 0 ? $offset_active + 1 : 0;
+                            $end_num = min($offset_active + $limit, $total_active);
+                        ?>
+                        <div class="section-meta-info">
+                            並び順: <?php echo h($order_act); ?>順 ｜ 合計: <?php echo $total_active; ?>件 （<?php echo $start_num; ?>-<?php echo $end_num; ?>件表示中）
                         </div>
                     </div>
 
-                    <div class="survey-list">
-                        <?php if (empty($active_surveys)): ?>
-                            <div class="survey-row" style="background-color:#f3f4f6; color:#333;"><span style="font-size:12px;">現在、受付中のアンケートはありません。</span></div>
-                        <?php else: ?>
-                            <?php foreach ($active_surveys as $survey): ?>
-                                <?php 
-                                    $required_time = isset($survey['duration']) ? (int)$survey['duration'] : 0; 
-                                ?>
-                                <div class="survey-row">
-                                    <div class="survey-info">
-                                        <div class="survey-date">
-                                            期限: 
-                                            <span id="public-date-box-<?php echo h($survey['survey_id']); ?>">
-                                                <?php echo h(date('Y.m.d H:i', strtotime($survey['deadline'] ?? ''))); ?>
-                                            </span>
-                                            <?php if ($required_time > 0): ?>
-                                                <span class="alert-time-text"> (目安時間: <?php echo h($required_time); ?>分)</span>
-                                            <?php endif; ?>
+                    <div class="scroll-box-content">
+                        <div class="survey-list">
+                            <?php if (empty($active_surveys)): ?>
+                                <div class="survey-row" style="background-color:#f3f4f6; color:#333;"><span style="font-size:12px;">現在、受付中のアンケートはありません。</span></div>
+                            <?php else: ?>
+                                <?php foreach ($active_surveys as $survey): ?>
+                                    <?php 
+                                        $required_time = isset($survey['duration']) ? (int)$survey['duration'] : 0; 
+                                        $start_date_str = isset($survey['created_at']) ? date('m月d日', strtotime($survey['created_at'])) : date('m月d日', strtotime($survey['start_date'] ?? 'now'));
+                                    ?>
+                                    <div class="survey-row">
+                                        <div class="survey-info">
+                                            <div class="survey-date">
+                                                期限: 
+                                                <span id="public-date-box-<?php echo h($survey['survey_id']); ?>">
+                                                    <?php echo h(date('Y.m.d H:i', strtotime($survey['deadline'] ?? ''))); ?>
+                                                </span>
+                                                <?php if ($required_time > 0): ?>
+                                                    <span class="alert-time-text"> (目安時間: <?php echo h($required_time); ?>分)</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
+                                            <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
                                         </div>
-                                        <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
-                                        <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
+                                        <div class="survey-actions">
+                                            <a href="question.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-answer">回答(<?php echo h($start_date_str); ?>~)</a>
+                                        </div>
                                     </div>
-                                    <div class="survey-actions">
-                                        <a href="question.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-answer">回答(○月○日~)</a>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -832,7 +941,7 @@ try {
                 <ul class="pagination" style="display:flex; justify-content:center; list-style:none; gap:6px; margin-top:15px; padding:0;">
                     <?php for ($i = 1; $i <= $total_pages_active; $i++): ?>
                         <li>
-                            <a href="index.php?p_act=<?php echo $i; ?>&p_res=<?php echo $page_result; ?>&sort=<?php echo h($sort_type); ?>" style="color:#fff; text-decoration:none; padding:4px 8px; background:rgba(255,255,255,0.1); border-radius:4px; font-size:12px;"><?php echo $i; ?></a>
+                            <a href="index.php?p_cre=<?php echo $page_created; ?>&p_ans=<?php echo $page_answered; ?>&p_act=<?php echo $i; ?>&p_res=<?php echo $page_result; ?>&s_cre=<?php echo h($sort_cre); ?>&s_ans=<?php echo h($sort_ans); ?>&s_act=<?php echo h($sort_act); ?>&s_res=<?php echo h($sort_res); ?>" class="js-page-link" style="color:#fff; text-decoration:none; padding:4px 8px; background:<?php echo ($i === $page_active) ? '#33ccff' : 'rgba(255,255,255,0.1)'; ?>; border-radius:4px; font-size:12px;"><?php echo $i; ?></a>
                         </li>
                     <?php endfor; ?>
                 </ul>
@@ -851,34 +960,47 @@ try {
                 </div>
 
                 <div class="survey-scroll-box">
-                    <button type="button" class="sort-trigger-btn">⇄ 並べ替え</button>
-                    
-                    <div class="sort-popup">
-                        <div class="sort-popup-close">×</div>
-                        <div class="sort-option-list">
-                            <button class="sort-option" data-sort-type="start">新着順</button>
-                            <button class="sort-option" data-sort-type="deadline">回答期限が近い順</button>
-                            <button class="sort-option" data-sort-type="responses">回答数が多い順</button>
+                    <div class="scroll-box-header">
+                        <button type="button" class="sort-trigger-btn">⇄ 並べ替え</button>
+                        <div class="sort-popup">
+                            <div class="sort-popup-close">×</div>
+                            <div class="sort-option-list">
+                                <button class="sort-option" data-sort-param="s_res" data-page-param="p_res" data-sort-type="start">新着順</button>
+                                <button class="sort-option" data-sort-param="s_res" data-page-param="p_res" data-sort-type="deadline">回答期限が近い順</button>
+                                <button class="sort-option" data-sort-param="s_res" data-page-param="p_res" data-sort-type="responses">回答数が多い順</button>
+                            </div>
+                        </div>
+                        <?php 
+                            $start_num_res = $total_result > 0 ? $offset_result + 1 : 0;
+                            $end_num_res = min($offset_result + $limit, $total_result);
+                        ?>
+                        <div class="section-meta-info">
+                            並び順: <?php echo h($order_res); ?>順 ｜ 合計: <?php echo $total_result; ?>件 （<?php echo $start_num_res; ?>-<?php echo $end_num_res; ?>件表示中）
                         </div>
                     </div>
 
-                    <div class="survey-list">
-                        <?php if (empty($result_surveys)): ?>
-                            <div class="survey-row" style="background-color:#f3f4f6; color:#333;"><span style="font-size:12px;">過去ログデータはありません。</span></div>
-                        <?php else: ?>
-                            <?php foreach ($result_surveys as $survey): ?>
-                                <div class="survey-row">
-                                    <div class="survey-info">
-                                        <div class="survey-date">終了日: <?php echo h(date('Y.m.d', strtotime($survey['deadline'] ?? ''))); ?></div>
-                                        <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
-                                        <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
+                    <div class="scroll-box-content">
+                        <div class="survey-list">
+                            <?php if (empty($result_surveys)): ?>
+                                <div class="survey-row" style="background-color:#f3f4f6; color:#333;"><span style="font-size:12px;">過去ログデータはありません。</span></div>
+                            <?php else: ?>
+                                <?php foreach ($result_surveys as $survey): ?>
+                                    <?php 
+                                        $deadline_str = isset($survey['deadline']) ? date('m月d日', strtotime($survey['deadline'])) : '○月○日';
+                                    ?>
+                                    <div class="survey-row">
+                                        <div class="survey-info">
+                                            <div class="survey-date">終了日: <?php echo h(date('Y.m.d', strtotime($survey['deadline'] ?? ''))); ?></div>
+                                            <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
+                                            <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
+                                        </div>
+                                        <div class="survey-actions">
+                                            <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-red">結果(<?php echo h($deadline_str); ?>~)</a>
+                                        </div>
                                     </div>
-                                    <div class="survey-actions">
-                                        <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-red">結果(○月○日~)</a>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -887,7 +1009,7 @@ try {
                 <ul class="pagination" style="display:flex; justify-content:center; list-style:none; gap:6px; margin-top:15px; padding:0;">
                     <?php for ($i = 1; $i <= $total_pages_result; $i++): ?>
                         <li>
-                            <a href="index.php?p_act=<?php echo $page_active; ?>&p_res=<?php echo $i; ?>&sort=<?php echo h($sort_type); ?>" style="color:#fff; text-decoration:none; padding:4px 8px; background:rgba(255,255,255,0.1); border-radius:4px; font-size:12px;"><?php echo $i; ?></a>
+                            <a href="index.php?p_cre=<?php echo $page_created; ?>&p_ans=<?php echo $page_answered; ?>&p_act=<?php echo $page_active; ?>&p_res=<?php echo $i; ?>&s_cre=<?php echo h($sort_cre); ?>&s_ans=<?php echo h($sort_ans); ?>&s_act=<?php echo h($sort_act); ?>&s_res=<?php echo h($sort_res); ?>" class="js-page-link" style="color:#fff; text-decoration:none; padding:4px 8px; background:<?php echo ($i === $page_result) ? '#33ccff' : 'rgba(255,255,255,0.1)'; ?>; border-radius:4px; font-size:12px;"><?php echo $i; ?></a>
                         </li>
                     <?php endfor; ?>
                 </ul>
@@ -942,6 +1064,25 @@ try {
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('scroll')) {
+                window.scrollTo(0, parseFloat(urlParams.get('scroll')));
+            }
+
+            function appendScrollParam(url) {
+                const currentScroll = window.scrollY || document.documentElement.scrollTop;
+                const targetUrl = new URL(url, window.location.origin);
+                targetUrl.searchParams.set('scroll', currentScroll);
+                return targetUrl.pathname + targetUrl.search;
+            }
+
+            document.querySelectorAll('.js-page-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.location.href = appendScrollParam(this.href);
+                });
+            });
+
             const liveAlertBar = document.getElementById('liveAlertBar');
             const liveAlertText = document.getElementById('liveAlertText');
 
@@ -950,9 +1091,17 @@ try {
                     liveAlertText.textContent = message;
                     liveAlertBar.style.display = 'block';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
-                    setTimeout(() => { liveAlertBar.style.display = 'none'; }, 5000);
+                    setTimeout(() => { 
+                        if (!message.includes('失敗')) {
+                            liveAlertBar.style.display = 'none'; 
+                        }
+                    }, 5000);
                 }
             }
+
+            <?php if (!empty($alert_message)): ?>
+                showLiveAlert(<?php echo json_encode($alert_message); ?>);
+            <?php endif; ?>
 
             const extendButtons = document.querySelectorAll('.js-extend-btn');
             extendButtons.forEach(button => {
@@ -1014,14 +1163,27 @@ try {
                 });
             });
 
+            // 並び替え処理のハンドリング
             const sortOptions = document.querySelectorAll('.sort-option');
             sortOptions.forEach(option => {
                 option.addEventListener('click', function(event) {
                     event.stopPropagation();
-                    const sortType = this.dataset.sortType;
-                    const urlParams = new URLSearchParams(window.location.search);
-                    urlParams.set('sort', sortType);
-                    window.location.href = 'index.php?' + urlParams.toString();
+                    const sortParamName = this.dataset.sortParam; 
+                    const sortType = this.dataset.sortType;      
+                    const pageParamName = this.dataset.pageParam;
+                    
+                    const currentUrlParams = new URLSearchParams(window.location.search);
+                    currentUrlParams.set(sortParamName, sortType);
+                    
+                    // 並べ替えたら、該当のリストは必ず「1ページ目」が表示されるようにリセット
+                    if (pageParamName) {
+                        currentUrlParams.set(pageParamName, '1');
+                    }
+                    
+                    const currentScroll = window.scrollY || document.documentElement.scrollTop;
+                    currentUrlParams.set('scroll', currentScroll);
+                    
+                    window.location.href = 'index.php?' + currentUrlParams.toString();
                 });
             });
 
