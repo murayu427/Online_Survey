@@ -46,7 +46,7 @@ if (isset($_GET['key']) && $_GET['key'] !== '') {
     $survey_key = $_GET['key'];
 
     // surveys.question_key で検索
-    $survey = get_survey_by_key($survey_key, "question");
+    $survey = get_survey_by_key($survey_key, "question_key");
 
     if ($survey && $survey['creator_id'] == $user_id) {
         $edit_mode = true;

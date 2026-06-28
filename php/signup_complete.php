@@ -22,30 +22,56 @@ if (!$input) {
     exit;
 }
 
-// データの取得（confirm_signup.php ですでにハッシュ化されている前提）
+// データの取得
 $username = $input['username'];
+$password = $input['password']; 
+
 $hashed_password = $input['password']; 
 
+// ハッシュ化
+$hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
 try {
-    // -----------------------------------------------------------------
-    // 【修正】共通関数 insert_user() を呼び出して安全にユーザー登録を実行
-    // 不要な uuid、agreed_terms の処理および二重ハッシュ化を撤廃
-    // -----------------------------------------------------------------
+        // ユーザー登録
     $result = insert_user($username, $hashed_password);
 
-    if ($result) {
-        // 登録処理に成功したら、一時セッションデータをクレンジング
-        unset($_SESSION['signup_input']);
-    } else {
+    if (!$result) {
         throw new Exception("ユーザーの挿入に失敗しました。");
     }
+
+    // 登録したユーザー情報を取得
+    $user = get_user_by_name($username);
+
+    if ($user === null) {
+        throw new Exception("登録したユーザーを取得できませんでした。");
+    }
+
+    // ログイン状態にする
+    $_SESSION['user_id'] = $user['user_id'];
+    $_SESSION['username'] = $user['account_name'];
+    $_SESSION['last_acc'] = time();
+
+    // 一時保存データを削除
+    unset($_SESSION['signup_input']);
+
+    // 元のURLが保存されていればそこへ戻る
+    if (!empty($_SESSION['return_to'])) {
+        $url = $_SESSION['return_to'];
+        unset($_SESSION['return_to']);
+        header("Location: $url");
+        exit;
+    }
+
+    // なければトップページへ
+    header("Location: index.php");
+    exit;
     
 } catch (Exception $e) {
     http_response_code(500);
     exit("500 Internal Server Error: データベース登録中にエラーが発生しました。");
 }
 ?>
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -61,4 +87,4 @@ try {
         </a>
     </div>
 </body>
-</html>
+</html> -->

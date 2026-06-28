@@ -16,12 +16,12 @@ $csrf_token = generate_csrf();
 
 // 4. 既読処理（header.php内で安全に完結）
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // ログイン済みか確認（auth.phpのセッションを利用）\
-    login_check();
     $json_input = file_get_contents('php://input');
     $input = json_decode($json_input, true);
 
     if (isset($input['action']) && $input['action'] === 'mark_read') {
+      // ログイン済みか確認
+      login_check();
       $ids = $input['ids'] ?? [];
       foreach ($ids as $id) {
         update_notification_flag((int)$id);
