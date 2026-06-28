@@ -42,11 +42,14 @@ if (is_null($r)) {
 $json = $r['survey_spec'];
 
 echo "<title>" . h($r['title']) . "</title>";
+echo "<head><link rel='stylesheet' href='../css/question_confirm.css'><link rel='stylesheet' href='../css/footer.css'>";
+echo "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>";
+echo "<script src='https://cdn.tailwindcss.com'></script></head>";
 echo "<body>";
 include "header.php";
 echo "<main>";
 echo "<h1>回答内容の確認</h1>";
-echo "<p>" . h($r['survey_spec']['title'] ?? '') . "</p>";
+echo "<p id='title'>" . h($r['survey_spec']['title'] ?? '') . "</p>";
 echo "<div id='tag'>";
 echo "<ul>";
 foreach (($r['survey_spec']['Survey_tag'] ?? []) as $tag) {
@@ -93,9 +96,10 @@ if (isset($_POST['birthday'])) {
     echo "<input type='hidden' name='birthday' value='" . h($_POST['birthday']) . "'>";
     echo "</div>";
 }
-
-echo "<button type='submit' formaction='question.php?question_id=" . h($q_key) . "'>修正する</button>";
-echo "<button type='submit'>送信する</button>";
+echo "<div id='submit'>";
+echo "<button id='reviseBt' type='submit' formaction='question.php?question_id=" . h($q_key) . "'>修正する</button>";
+echo "<button id='submitBt' type='submit'>送信する</button>";
+echo "</div>";
 echo "</form>";
 echo "<script src='../js/api_manager.js'></script>";
 echo "</main>";
