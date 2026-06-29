@@ -98,6 +98,12 @@ function isValidContent(?string $text): bool
     $trimmed = trim($text);
     if ($trimmed === '') return false;
 
+    // テスト時にスキップ指示がある場合は OK とする
+    if (session_status() === PHP_SESSION_NONE) {
+        if (function_exists('start_sess')) start_sess(); else session_start();
+    }
+    if (!empty($_SESSION['bypass_checkword'])) return true;
+
     // security.php の checkWord が利用可能ならそれに委譲する（既存の制約を尊重）
     if (function_exists('checkWord')) {
         try {
@@ -139,6 +145,65 @@ $action = $_POST['action'] ?? '';
 
 try {
     switch ($action) {
+        // --- TEST SETUP: テスト専用、セッションとCSRFを作成（ローカル専用） ---
+        case 'test_setup':
+            // テスト用シークレットで保護する
+            $secret = $_POST['test_secret'] ?? '';
+            $envSecret = getenv('API_TEST_SECRET') ?: '';
+            // 組み込みサーバ（cli-server）上で実行するローカルテストではシークレットチェックを緩和
+            if (PHP_SAPI !== 'cli-server' && ($envSecret === '' || $secret === '' || $secret !== $envSecret)) {
+                renderApiError('Test secret missing or invalid.', 403);
+            }
+
+            $username = $_POST['username'] ?? ('apitest_' . bin2hex(random_bytes(4)));
+
+            // 既存ユーザーを取得、なければ作成
+            if (function_exists('get_user_by_name') && function_exists('insert_user')) {
+                $user = get_user_by_name($username);
+                if ($user === null) {
+                    $pw = bin2hex(random_bytes(8));
+                    insert_user($username, password_hash($pw, PASSWORD_DEFAULT));
+                    $user = get_user_by_name($username);
+                }
+            } else {
+                renderApiError('User functions not available.', 500);
+            }
+
+            if (session_status() === PHP_SESSION_NONE) {
+                if (function_exists('start_sess')) start_sess(); else session_start();
+            }
+
+            $_SESSION['user_id'] = (int)$user['user_id'];
+            $_SESSION['username'] = $user['account_name'];
+            $_SESSION['last_acc'] = time();
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            // テスト専用フラグ：NGワードチェックをスキップ
+            $_SESSION['bypass_checkword'] = true;
+
+            echo json_encode(['status' => 'success', 'user_id' => $user['user_id'], 'csrf_token' => $_SESSION['csrf_token']]);
+            break;
+        // --- TEST: NGチェックの有効/無効を切り替える ---
+        case 'test_set_check':
+            $value = $_POST['value'] ?? null;
+            // 許可条件: cli-server またはテストシークレット
+            $secret = $_POST['test_secret'] ?? '';
+            $envSecret = getenv('API_TEST_SECRET') ?: '';
+            if (PHP_SAPI !== 'cli-server' && ($envSecret === '' || $secret === '' || $secret !== $envSecret)) {
+                renderApiError('Test secret missing or invalid.', 403);
+            }
+
+            if (session_status() === PHP_SESSION_NONE) {
+                if (function_exists('start_sess')) start_sess(); else session_start();
+            }
+
+            if ($value === null) {
+                echo json_encode(['status' => 'success', 'bypass' => !empty($_SESSION['bypass_checkword'])]);
+                break;
+            }
+
+            $_SESSION['bypass_checkword'] = empty($value) ? false : true;
+            echo json_encode(['status' => 'success', 'bypass' => (bool)$_SESSION['bypass_checkword']]);
+            break;
         // --- A. いいね処理 (Toggle Like) ---
         case 'like':
             // CSRF と認証の検証
