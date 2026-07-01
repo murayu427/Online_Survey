@@ -16,6 +16,13 @@ require_once 'security.php';
 
 start_sess(); // セッション開始（auth.phpの関数を使用）
 
+
+// //!!!!!模擬ログイン(消すやつ)!!!!!
+// if (!isset($_SESSION['user_id'])){
+//     $_SESSION['user_id'] = 1;
+//     $_SESSION['account_name'] = 'a';
+// }
+
 // 安全にHTMLエスケープを行うための共通関数
 if (!function_exists('h')) {
     function h($string) {
@@ -34,30 +41,30 @@ $is_logged_in = (isset($_SESSION) && isset($_SESSION['user_id']));
 $current_user_id = $is_logged_in ? (int)$_SESSION['user_id'] : null;
 
 // サインアウト処理のハンドリング
-if (isset($_GET['action']) && $_GET['action'] === 'signout') {
-    $_SESSION = array(); 
-    if (login_has_session_cookie_configured()) {
-        setcookie(session_name(), '', time() - 42000, '/');
-    }
-    del_sess();
-    header("Location: index.php");
-    exit;
-}
+// if (isset($_GET['action']) && $_GET['action'] === 'signout') {
+//     $_SESSION = array(); 
+//     if (login_has_session_cookie_configured()) {
+//         setcookie(session_name(), '', time() - 42000, '/');
+//     }
+//     del_sess();
+//     header("Location: index.php");
+//     exit;
+// }
 
-// 退会処理のハンドリング
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_account') {
-    if ($is_logged_in && $current_user_id !== null) {
-        $delete_success = delete_user($current_user_id);
-        if ($delete_success) {
-            $_SESSION = array();
-            del_sess();
-            header("Location: index.php");
-            exit;
-        } else {
-            $alert_message = "退会処理に失敗しました。システム管理者に連絡してください。";
-        }
-    }
-}
+// // 退会処理のハンドリング
+// if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_account') {
+//     if ($is_logged_in && $current_user_id !== null) {
+//         $delete_success = delete_user($current_user_id);
+//         if ($delete_success) {
+//             $_SESSION = array();
+//             del_sess();
+//             header("Location: index.php");
+//             exit;
+//         } else {
+//             $alert_message = "退会処理に失敗しました。システム管理者に連絡してください。";
+//         }
+//     }
+// }
 
 // 新しくホームページに戻った時は必ず新着順にする
 $has_any_sort_param = isset($_GET['s_cre']) || isset($_GET['s_ans']) || isset($_GET['s_act']) || isset($_GET['s_res']);
@@ -702,7 +709,7 @@ try {
                     <a href="signin.php" class="oval-btn btn-signin">サインイン →</a>
                 <?php else: ?>
                     <a href="unsubscription.php" class="oval-btn btn-withdraw">退会 →</a>
-                    <a href="index.php?action=signout" class="oval-btn btn-signout">サインアウト →</a>
+                    <a href="signout.php" class="oval-btn btn-signout">サインアウト →</a>
                     <a href="survey_form.php" class="oval-btn btn-create">アンケートフォーム作成 →</a>
                     <a href="profile.php" class="oval-btn btn-profile">ユーザ情報の変更 →</a>
                 <?php endif; ?>
