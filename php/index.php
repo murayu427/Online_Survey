@@ -701,7 +701,7 @@ try {
                     <a href="signup.php" class="oval-btn btn-signup">ユーザー登録 →</a>
                     <a href="signin.php" class="oval-btn btn-signin">サインイン →</a>
                 <?php else: ?>
-                    <a href="index.php?view=withdraw" class="oval-btn btn-withdraw">退会 →</a>
+                    <a href="unsubscription.php" class="oval-btn btn-withdraw">退会 →</a>
                     <a href="index.php?action=signout" class="oval-btn btn-signout">サインアウト →</a>
                     <a href="survey_form.php" class="oval-btn btn-create">アンケートフォーム作成 →</a>
                     <a href="profile.php" class="oval-btn btn-profile">ユーザ情報の変更 →</a>
@@ -1048,7 +1048,7 @@ try {
         </section>
     </div>
 
-    <div class="withdraw-overlay" id="withdrawOverlay">
+    <!-- <div class="withdraw-overlay" id="withdrawOverlay">
         <div class="withdraw-popup">
             <p class="withdraw-message">本当に退会しますか？</p>
             <form action="index.php" method="POST" class="withdraw-buttons">
@@ -1057,7 +1057,7 @@ try {
                 <button type="submit" class="btn-submit">退会</button>
             </form>
         </div>
-    </div>
+    </div> -->
 
     <button type="button" class="page-top-pink-btn">▲<br> <br>TOP</button>
 
