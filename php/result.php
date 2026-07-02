@@ -2,6 +2,7 @@
 require_once __DIR__ . '/auth.php';
 start_sess();
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/header.php';
 // アンケートID
 $result_key = $_GET["key"] ?? '';
 $user_id = $_SESSION['user_id'] ?? 1;
@@ -94,7 +95,17 @@ $comment_list_data = get_comments_by_survey_id((int)$survey_id);
 <title>アンケート結果</title>
 <meta name="csrf-token" content="<?= $_SESSION['csrf_token'] ?? '' ?>">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body {
+        background-color: #1e2d5a; /* 濃い紺色 */
+        color: #ffffff;            /* 文字を白色に */
+    }
 
+    /* リンクの色も見やすいように調整 */
+    a {
+        color: #add8e6;            /* 薄い青色 */
+    }
+</style>
 </head>
 <body>
 
@@ -112,6 +123,7 @@ $comment_list_data = get_comments_by_survey_id((int)$survey_id);
     </div>
 <?php } ?>
 </div>
+
 
 <script>
 // PHP側で準備した全質問の集計データをループさせて、Chart.jsをそれぞれ実行する
@@ -187,6 +199,7 @@ $comment_list_data = get_comments_by_survey_id((int)$survey_id);
 </a>
 
 <script src="api_manager.js"></script>
+<?php require_once __DIR__ . '/footer.php'; ?>
 
 </body>
 </html>
