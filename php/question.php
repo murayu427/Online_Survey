@@ -3,7 +3,7 @@ require "db.php";
 require_once 'auth.php';
 require_once 'security.php';
 require_once 'error.php';
-$q_key = $_GET['id'] ?? '';
+$q_key = $_GET['question_id'] ?? $_GET['id'] ?? '';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

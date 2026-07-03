@@ -488,24 +488,24 @@ function get_responses_by_survey_id(int $survey_id): array
 /**
  * 回答を登録する（既存回答があれば更新）
  */
-function upsert_response(int $survey_id, ?int $user_id, array $answer_data): bool
+function upsert_response(int $survey_id, ?int $user_id, array $answer_data, ?string $gender, ?string $age): bool
 {
     $payload = json_encode($answer_data, JSON_UNESCAPED_UNICODE);
     if ($payload === false) {
         throw new RuntimeException('Failed to encode answer data.');
     }
     if ($user_id === null) {
-        $sql = 'INSERT INTO responses (survey_id, user_id, answer_data, answered_at) 
-                VALUES (:survey_id, NULL, :answer_data, NOW())';
-        executeQuery($sql, [':survey_id' => $survey_id, ':answer_data' => $payload]);
+        $sql = 'INSERT INTO responses (survey_id, user_id, answer_data, answered_at, respondent_gender, respondent_age) 
+                VALUES (:survey_id, NULL, :answer_data, NOW(), :gender, :age)';
+        executeQuery($sql, [':survey_id' => $survey_id, ':answer_data' => $payload, ':gender' => $gender, ':age' => $age]);
         return true;
     }
-    $sql = 'INSERT INTO responses (survey_id, user_id, answer_data, answered_at) 
-            VALUES (:survey_id, :user_id, :answer_data, NOW()) 
+    $sql = 'INSERT INTO responses (survey_id, user_id, answer_data, answered_at, respondent_gender, respondent_age) 
+            VALUES (:survey_id, :user_id, :answer_data, NOW(), :gender, :age) 
             ON CONFLICT (survey_id, user_id) 
             DO UPDATE SET answer_data = EXCLUDED.answer_data, answered_at = NOW()';
     
-    executeQuery($sql, [':survey_id' => $survey_id, ':user_id' => $user_id, ':answer_data' => $payload]);
+    executeQuery($sql, [':survey_id' => $survey_id, ':user_id' => $user_id, ':answer_data' => $payload, ':gender' => $gender, ':age' => $age]);
     return true;
 }
 
