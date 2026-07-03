@@ -2,7 +2,7 @@
 require_once __DIR__ . '/auth.php';
 start_sess();
 require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/header.php';
+
 // アンケートID
 $result_key = $_GET["key"] ?? '';
 $user_id = $_SESSION['user_id'] ?? 1;
@@ -12,7 +12,6 @@ if ($result_key === '') {
 //====================================
 // ① 集計データ取得（グラフ用）
 //====================================
-//$responses = get_responses_by_survey_id((int)$survey_id);
 
 $survey = get_survey_by_key($result_key, 'result');
 
@@ -22,10 +21,8 @@ if ($survey === null) {
 
 // 取得したデータから survey_id を抽出
 $survey_id = (int)$survey['survey_id'];
-
 // アンケートの仕様（質問の一覧など）を取得
 $spec_data = $survey['survey_spec'];
-
 // 判明した survey_id を使って回答データを全件取得
 $responses = get_responses_by_survey_id($survey_id);
 $all_chart_data = [];
@@ -33,9 +30,12 @@ $all_chart_data = [];
 // 仕様書に定義されている質問（q1, q2...）をすべてループして集計
 if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
     foreach ($spec_data['questions'] as $q) {
+        // $q が配列ではない、または 'id' が存在しない不正なデータなら無視して次へ進む
+        if (!is_array($q) || !isset($q['id'])) {
+            continue;
+        }
         $q_id = $q['id'];                // 例: 'q1', 'q2'
         $q_title = $q['title'] ?? $q_id; // 質問のタイトル
-
         // この質問に対する選択肢ごとの票数を数える
         $counts = [];
         foreach ($responses as $response) {
@@ -47,12 +47,15 @@ if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
                 // チェックボックスなどの複数回答（配列）の場合
                 if (is_array($ans)) {
                     foreach ($ans as $a) {
-                        $counts[$a] = isset($counts[$a]) ? $counts[$a] + 1 : 1;
+                        // null（空っぽ）を配列のキー（名前）にしようとするとエラーになるため、「未回答」などの文字に変換する
+                        $answer_key = $a ?? '無効な回答';
+                        $counts[$answer_key] = isset($counts[$answer_key]) ? $counts[$answer_key] + 1 : 1;
                     }
                 } 
                 // ラジオボタンなどの単一回答の場合
                 else {
-                    $counts[$ans] = isset($counts[$ans]) ? $counts[$ans] + 1 : 1;
+                    $answer_key = $ans ?? '無効な回答';
+                    $counts[$answer_key] = isset($counts[$answer_key]) ? $counts[$answer_key] + 1 : 1;
                 }
             }
         }
@@ -61,8 +64,8 @@ if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
         $labels = [];
         $data = [];
         foreach ($counts as $answer_value => $count) {
-            $labels[] = $answer_value; // 選択肢の名前
-            $data[] = $count;          // 獲得した票数
+            $labels[] = (string)$answer_value; // 確実に文字列にする
+            $data[] = $count;          
         }
 
         // グラフ種類の判定（仕様書の設定を反映）
@@ -71,7 +74,7 @@ if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
             $chart_type = 'bar'; // Chart.js用変換
         }
 
-        // 💡 質問ID（q1など）をキーにして、集計結果をまとめて保存
+        // 質問ID（q1など）をキーにして、集計結果をまとめて保存
         $all_chart_data[$q_id] = [
             'title'      => $q_title,
             'chart_type' => $chart_type,
@@ -83,123 +86,148 @@ if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
 //====================================
 // ② コメント一覧取得
 //====================================
-
 $comment_list_data = get_comments_by_survey_id((int)$survey_id);
-
+$chart_keys = array_keys($all_chart_data);
+$last_chart_key = end($chart_keys);
 ?>
 
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>アンケート結果</title>
-<meta name="csrf-token" content="<?= $_SESSION['csrf_token'] ?? '' ?>">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アンケート結果 - オンラインアンケートサイト</title>
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="../css/question.css">
+    <link rel="stylesheet" href="../css/footer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/readability.css">
 <style>
-    body {
-        background-color: #1e2d5a; /* 濃い紺色 */
-        color: #ffffff;            /* 文字を白色に */
-    }
-
-    /* リンクの色も見やすいように調整 */
-    a {
-        color: #add8e6;            /* 薄い青色 */
-    }
-</style>
+        /* 紺色背景・白文字の設定 */
+        body {
+            background-color: #000080;
+            color: #ffffff;
+        }
+        /* コメントカードの設定 */
+        .comment-box {
+            background-color: #ffffff;
+            color: #333333;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        /* 横並びレイアウト用のスタイル */
+        .flex-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 40px;
+            margin-bottom: 50px;
+        }
+        .flex-item {
+            flex: 1;
+            min-width: 400px;
+        }
+    </style>
 </head>
 <body>
+<?php require_once 'header.php'; ?>
+<main class="max-w-7xl mx-auto p-6">
+    <input type="hidden" id="current-survey-id" value="<?= htmlspecialchars((string)$survey_id) ?>">
+    <span id="save-status" style="color: gray; font-size: 0.9em; float: right;"></span>
 
-<input type="hidden" id="current-survey-id" value="<?= htmlspecialchars((string)$survey_id) ?>">
-<span id="save-status" style="color: gray; font-size: 0.9em; float: right;"></span>
-<h1>アンケート結果</h1>
-<div id="survey-results-container">
-<?php foreach ($all_chart_data as $q_id => $info) { ?>
-    <div class="question-block" style="margin-bottom: 50px; border-bottom: 1px dashed #ccc; padding-bottom: 30px;">
-        <h2>📊 <?= htmlspecialchars($info['title']) ?></h2>
-        
-        <div style="width: 400px; height: 300px;">
-            <canvas id="chart-<?= htmlspecialchars($q_id) ?>"></canvas>
+    <h1 class="text-3xl font-bold my-6 text-white">アンケート結果</h1>
+
+    <div id="survey-results-container">
+    <?php foreach ($all_chart_data as $q_id => $info) { 
+        if ($q_id === $last_chart_key) continue; 
+    ?>
+        <div class="question-block" style="margin-bottom: 50px; border-bottom: 1px dashed #ccc; padding-bottom: 30px;">
+            <h2 class="text-xl font-semibold mb-4">📊 <?= htmlspecialchars((string)$info['title']) ?></h2>
+            <div style="width: 400px; height: 300px;">
+                <canvas id="chart-<?= htmlspecialchars((string)$q_id) ?>"></canvas>
+            </div>
+        </div>
+    <?php } ?>
+    </div>
+
+    <?php if ($last_chart_key !== false) { 
+        $last_info = $all_chart_data[$last_chart_key];
+    ?>
+    <div class="flex-container">
+        <div class="flex-item">
+            <h2 class="text-xl font-semibold mb-4">📊 <?= htmlspecialchars((string)$last_info['title']) ?></h2>
+            <div style="width: 100%; max-width: 500px; height: 300px;">
+                <canvas id="chart-<?= htmlspecialchars((string)$last_chart_key) ?>"></canvas>
+            </div>
+        </div>
+
+        <div class="flex-item">
+            <h2 class="text-xl font-semibold mb-4">💬 コメント</h2>
+            
+            <textarea id="comment-text-area" rows="3" class="w-full p-2 text-black rounded" placeholder="コメントを入力してください"></textarea><br>
+            <button onclick="postComment()" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">送信</button>
+
+            <hr class="my-6 border-gray-600">
+
+            <div id="comment-list" style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
+            <?php foreach ($comment_list_data as $row) { 
+                $name = $row["account_name"] ?? $row["username"] ?? 'ゲスト利用者';
+                $comment = $row["comment"];
+            ?>
+                <div class="comment-box">
+                    <p style="margin-top: 0;"><strong><?= htmlspecialchars($name) ?></strong></p>
+                    <p><?= nl2br(htmlspecialchars($comment)) ?></p>
+                    <button onclick="toggleLike(<?= $row['comment_id'] ?>)" class="mt-2 border border-gray-300 px-3 py-1 rounded-full text-sm">
+                        👍 <span id=\"like-count-<?= $row['comment_id'] ?>\"><?= $row["like_count"] ?? 0 ?></span>
+                    </button>
+                </div>
+            <?php } ?>
+            </div>
         </div>
     </div>
-<?php } ?>
-</div>
+    <?php } ?>
 
-
-<script>
-// PHP側で準備した全質問の集計データをループさせて、Chart.jsをそれぞれ実行する
-<?php foreach ($all_chart_data as $q_id => $info) { ?>
-{
-    const ctx = document.getElementById('chart-<?= htmlspecialchars($q_id) ?>');
-    new Chart(ctx, {
-        type: '<?= $info['chart_type'] ?>', 
-        data: {
-            labels: <?= json_encode($info['labels']) ?>,
-            datasets: [{
-                label: '回答数',
-                data: <?= json_encode($info['data']) ?>,
-                backgroundColor: [
-                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'
-                ]
-            }]
-        },
-        options: {
-            responsive: true
-        }
-    });
-}
-<?php } ?>
-</script>
-<hr>
+    <div class="mt-12 flex gap-4">
+        <a href="download.php?key=<?= htmlspecialchars($result_key) ?>&format=csv" target="_blank" class="text-blue-300 hover:underline">CSV形式でダウンロード</a>
+        <a href="download.php?key=<?= htmlspecialchars($result_key) ?>&format=pdf" target="_blank" class="text-blue-300 hover:underline">PDF形式でダウンロード</a>
+    </div>
+</main>
 
 <form id="main-form" style="display:none;"></form>
 
-<!-- ================================== -->
-<!-- ④ コメント投稿フォーム -->
-<!-- ================================== -->
-<h2>コメント投稿</h2>
+<script>
+// Chart.jsの文字色をすべて「白」に統一
+Chart.defaults.color = '#ffffff';
 
-<textarea id="comment-text-area" rows="4" cols="50" placeholder="コメントを入力してください"></textarea><br>
-<button onclick="postComment()">送信</button>
-
-<hr>
-
-<!-- ================================== -->
-<!-- ⑤ コメント一覧 -->
-<!-- ================================== -->
-<h2>コメント一覧</h2>
-
-<div id="comment-list">
-
-<?php foreach ($comment_list_data as $row) { ?>
-    <div style="border:1px solid #000; margin:10px; padding:10px">
-        <p><strong><?= htmlspecialchars($row["account_name"] ?? $row["username"] ?? 'ゲスト利用者') ?></strong></p>
-        <p><?= nl2br(htmlspecialchars($row["comment"])) ?></p>
-
-        <button onclick="toggleLike(<?= $row['comment_id'] ?>)">
-            👍 <span id="like-count-<?= $row['comment_id'] ?>">
-                <?= $row["like_count"] ?? 0 ?>
-            </span>
-        </button>
-    </div>
+// 全質問のグラフ描画JS
+<?php foreach ($all_chart_data as $q_id => $info) { ?>
+{
+    const ctx = document.getElementById('chart-<?= htmlspecialchars((string)$q_id) ?>');
+    if (ctx) {
+        new Chart(ctx, {
+            type: '<?= $info['chart_type'] ?>', 
+            data: {
+                labels: <?= json_encode($info['labels']) ?>,
+                datasets: [{
+                    label: '回答数',
+                    data: <?= json_encode($info['data']) ?>,
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+}
 <?php } ?>
-
-</div>
-
-<hr>
-
-<!-- ================================== -->
-<!-- ⑥ CSV / PDF ダウンロード -->
-<!-- ================================== -->
-
-<a href="download.php?survey_id=<?= $survey_id ?>&format=csv" target="_blank">
-    CSV形式でダウンロード
-</a>
-<a href="download.php?survey_id=<?= $survey_id ?>&format=pdf" target="_blank">
-    PDF形式でダウンロード
-</a>
+</script>
 
 <script src="api_manager.js"></script>
-<?php require_once __DIR__ . '/footer.php'; ?>
 
+<?php require_once 'header.php'; // footer.phpの代わりに共通定義されているheaderファイル内のフッター部分を反映、あるいはfooter.phpがあればそちらを指定してください ?>
 </body>
 </html>
