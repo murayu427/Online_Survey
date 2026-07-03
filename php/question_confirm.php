@@ -65,19 +65,20 @@ echo "<input type='hidden' name='question_id' value='" . h($q_key) . "'>";
 
 foreach (($json['questions'] ?? []) as $i => $question) {
     $key = "q{$i}";
+    $question_text = $question['label'] ?? $question['question'] ?? $question['text'] ?? '';
     echo "<div class='question'>";
-    echo "<h3>" . h($question['label'] ?? '') . "</h3>";
+    echo "<h3>" . h(($i + 1) . '. ' . $question_text) . "</h3>";
 
     $answer_value = $_POST[$key] ?? null;
     if (is_array($answer_value)) {
         foreach ($answer_value as $ans) {
-            echo "<div>" . h($ans) . "</div>";
+            echo "<div class='answer-text'>" . h($ans) . "</div>";
         }
         foreach ($answer_value as $ans) {
             echo "<input type='hidden' name='{$key}[]' value='" . h($ans) . "'>";
         }
     } else {
-        echo "<div>" . h($answer_value ?? '') . "</div>";
+        echo "<div class='answer-text'>" . h($answer_value ?? '') . "</div>";
         echo "<input type='hidden' name='{$key}' value='" . h($answer_value ?? '') . "'>";
     }
 

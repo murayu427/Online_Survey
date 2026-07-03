@@ -2,63 +2,92 @@ body {
     padding-top: 100px;
     background-color: #164a84;
     color: aliceblue;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    font-size: 1.25rem;
 }
 
 main {
     padding: 0 10% 0 10%;
+    flex-grow: 1;
+}
+
+h1 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
 }
 
 #title {
-    font-size: xx-large;
+    font-size: 2rem;
+    margin-bottom: 1rem;
 }
 
 main h1 {
     text-align: center;
-    font-size: x-large;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
 }
 
 main h3{
-    font-size: x-large;
+    font-size: 1.75rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    color: #ffffff;
+}
+
+.answer-text {
+    font-size: 1.5rem;
+    color: #F5E6CA;
+    margin-bottom: 1rem;
+    padding-left: 0.5rem;
+    border-left: 3px solid #F5E6CA;
 }
 
 #tag ul{
     display: flex;
     justify-content: left;
     padding: 5px;
+    margin-bottom: 2rem;
 }
 
 #tag li{
-    list-style: none;   /* 点を消す */
-    padding-left: 0;    /* 左の余白を消す */
-    margin-left: 1em; 
-    border: 1px solid #ccc; 
+    list-style: none;
+    padding: 0.5rem 1rem;
+    margin-right: 1em;
+    border: 1px solid #ccc;
     border-radius: 5px;
-    min-width: 3em;
-    max-width: auto;
-    height: 2em;
-    text-align: center;
-    padding: 0.1em 0.1em 0.1em 0.1em;
+    font-size: 1rem;
 }
 
 #submit {
     display: flex;
     justify-content: center;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 20px;
+    gap: 30px;
+    padding: 40px;
 }
 
-#submit button{
-    padding: 10px;
-    border-radius: 20%;
-    border: 1px solid #ccc;
+#submit button {
+    padding: 15px 40px;
+    font-size: 1.25rem;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s;
+    color: white;
+}
+
+#submit button:hover {
+    transform: scale(1.05);
 }
 
 #reviseBt {
-    background-color: #7b7c7d;
+   background-color: #6c757d;
 }
 
 #submitBt {
-    background-color: #df7163;
+    background-color: #28a745;
 }

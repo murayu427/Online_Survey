@@ -1,0 +1,50 @@
+/* question_complete.css */
+
+body {
+    padding-top: 100px;
+    background-color: #164a84;
+    color: aliceblue;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+}
+
+main {
+    padding: 0 10%;
+    flex-grow: 1;
+
+    /* text-center py-20 */
+    text-align: center;
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+}
+
+.complete-title {
+    font-size: 5rem;
+    line-height: 1.2;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+}
+
+/* text-3xl font-semibold mb-10 text-blue-200 */
+main h2 {
+    font-size: 1.875rem;
+    font-weight: 600;
+    margin-bottom: 2.5rem;
+    color: #bfdbfe;
+}
+
+/* text-xl mb-16 */
+main p {
+    font-size: 1.25rem;
+    margin-bottom: 4rem;
+}
+
+/* flex justify-center gap-10 */
+main > div {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+}

@@ -55,6 +55,7 @@ main h2{
     border: 1px solid #ccc;
     padding: 10px;
     font-size: 14px;
+    color: black;
 }
 #submit{
     display: flex;
