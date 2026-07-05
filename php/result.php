@@ -14,7 +14,7 @@ if ($result_key === '') {
 // ① 集計データ取得（グラフ用）
 //====================================
 
-$survey = get_survey_by_key($result_key, 'result_key');
+$survey = get_survey_by_key($result_key, 'result');
 
 if ($survey === null) {
     renderError('エラー：指定されたアンケートが見つかりません。', 404, 'app', 'WARNING', null, 'Survey Not Found');
