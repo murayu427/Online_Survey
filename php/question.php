@@ -65,6 +65,7 @@ if(is_null($r)){
             $selected_gender = 'other';
         }
     }
+    if ($previous_response[''])
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -154,7 +155,7 @@ if(is_null($r)){
         }
         echo "</div>"; 
     }
-    $gender_value = $_POST['Q_gender'] ?? $selected_gender;
+    $gender_value = $_POST['Q_gender'] ?? $autosave["Q_gender"] ?? $selected_gender;
     echo "<div class='question'>";
     echo "<h2>性別を選択してください</h2>";
     echo "<label class='option'>";
@@ -172,7 +173,7 @@ if(is_null($r)){
     echo "</div><div class=question>";
     echo "<h2>生年月日を入力してください</h2>";
     $max_date = date('Y-m-d');
-    echo "<input type='date' name='birthday' min='1900-01-01' max='{$max_date}' required><br>";
+    echo "<input type='date' name='birthday' min='1900-01-01' max='{$max_date}'  value=".($_POST['birthday'] ?? $autosave['birthday'])." required><br>";
     echo "</div>";
     echo "<div id='submit'><button type='submit'>送信画面へ</button></div>";
     echo "</form>";

@@ -91,7 +91,6 @@ $surveys = get_all_survey_titles();
 const surveyData = <?php echo json_encode($surveys); ?>;
 const notiIds = <?php echo json_encode(array_column($notifications, 'survey_id')); ?>;
 const csrfToken = document.getElementById('csrf_token').value;
-
 document.addEventListener('DOMContentLoaded', () => {
   const notiBtn = document.getElementById('notificationBtn');
   const notiPopup = document.getElementById('notificationPopup');
@@ -140,9 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if(val) {
       searchPopup.classList.remove('hidden');
       if(notiPopup) notiPopup.classList.add('hidden');
-      const filtered = surveyData.filter(s => s.includes(val));
+      const filtered = surveyData.filter(s => s.title.includes(val));
       resultsContainer.innerHTML = filtered.length > 0 
-        ? filtered.map(s => `<div class="p-2 hover:bg-gray-100 cursor-pointer">${s}</div>`).join('')
+        ? filtered.map(s => `<a href="question.php?id=${s.question_key}" class="p-2 hover:bg-gray-100 cursor-pointer">${s.title}</a>`).join('')
         : '<div class="p-2 text-gray-400">該当なし</div>';
     } else {
       searchPopup.classList.add('hidden');

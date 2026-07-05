@@ -117,6 +117,16 @@ function get_user_by_name(string $name): ?array
 }
 
 /**
+ * ユーザ情報を変更する
+ */
+
+function update_user(string $userid, string $newname, string $newhashedpass): bool{
+    $sql = "update users set account_name=:newname,password_hash=:newpass,updated_at=NOW() where user_id=:currentname";
+    $stmt = executeQuery($sql, [':newname'=>$newname,':newpass'=>$newhashedpass,':currentname'=>$userid]);
+    return $stmt->rowCount() > 0;
+}
+
+/**
  * ユーザーと関連データをまとめて削除する（トランザクション使用）
  */
 function delete_user(int $user_id): bool
@@ -195,9 +205,9 @@ function get_surveys_list(int $limit, int $offset): array
 
 function get_all_survey_titles(): array
 {
-    $sql = 'SELECT title FROM surveys';
+    $sql = 'SELECT title,question_key FROM surveys';
     $stmt = executeQuery($sql);
-    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 /**
