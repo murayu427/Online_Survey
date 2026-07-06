@@ -84,6 +84,26 @@ main h3{
     transform: scale(1.05);
 }
 
+.lift-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, filter 0.18s ease;
+    will-change: transform;
+    transform: translateY(0);
+}
+
+.lift-button:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+    filter: brightness(1.05);
+}
+
+.lift-button:active {
+    transform: translateY(-1px) scale(0.99);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.16);
+}
+
 #reviseBt {
    background-color: #6c757d;
 }

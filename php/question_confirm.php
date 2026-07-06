@@ -98,8 +98,8 @@ if (isset($_POST['birthday'])) {
     echo "</div>";
 }
 echo "<div id='submit'>";
-echo "<button id='reviseBt' type='submit' formaction='question.php?question_id=" . h($q_key) . "'>修正する</button>";
-echo "<button id='submitBt' type='submit'>送信する</button>";
+echo "<button id='reviseBt' class='lift-button' type='submit' formaction='question.php?question_id=" . h($q_key) . "'>修正する</button>";
+echo "<button id='submitBt' class='lift-button' type='submit'>送信する</button>";
 echo "</div>";
 echo "</form>";
 echo "<script src='../js/api_manager.js'></script>";

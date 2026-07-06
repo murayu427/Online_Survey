@@ -18,7 +18,7 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf_token = $_SESSION['csrf_token'];
 
-$raw_autosave = $_SESSION['autosave']['answer']['data'] ?? [];
+$raw_autosave = $_SESSION['autosave']['answer'][$q_key]['data'] ?? [];
 
 $autosave = [];
 $errors = [];
@@ -65,7 +65,6 @@ if(is_null($r)){
             $selected_gender = 'other';
         }
     }
-    if ($previous_response[''])
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -108,6 +107,7 @@ if(is_null($r)){
     }
     $len = count($json["questions"]);
     echo "<form method='post' action='question_confirm.php?question_id={$q_key}' id='main-form'>";
+    echo "<input type='hidden' name='question_id' value='" . htmlspecialchars($q_key, ENT_QUOTES, 'UTF-8') . "'>";
     echo "<input type='hidden' name='csrf_token' value='".htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8')."'>";
     $id_cnt = 0;//チェックボックス等のid用変数
     for ($i=0; $i<$len; $i++){
@@ -173,9 +173,10 @@ if(is_null($r)){
     echo "</div><div class=question>";
     echo "<h2>生年月日を入力してください</h2>";
     $max_date = date('Y-m-d');
-    echo "<input type='date' name='birthday' min='1900-01-01' max='{$max_date}'  value=".($_POST['birthday'] ?? $autosave['birthday'])." required><br>";
+    $birthday_value = $_POST['birthday'] ?? $autosave['birthday'] ?? '';
+    echo "<input type='date' name='birthday' min='1900-01-01' max='{$max_date}' value='" . htmlspecialchars((string)$birthday_value, ENT_QUOTES, 'UTF-8') . "' required><br>";
     echo "</div>";
-    echo "<div id='submit'><button type='submit'>送信画面へ</button></div>";
+    echo "<div id='submit'><button type='submit' class='lift-button'>送信画面へ</button></div>";
     echo "</form>";
     echo "<script src='../js/api_manager.js'></script>";
     echo "</main>";

@@ -222,7 +222,7 @@ try {
 
             // $play_voice = (mt_rand(1, 10) === 1);
 
-            $play_voice = true;
+            $play_voice = !empty($res['liked']);
 
             echo json_encode([
                 'status' => 'success',
@@ -263,9 +263,11 @@ try {
             // フロント用 HTML を構築（XSS 保護）
             $safe_text = htmlspecialchars($raw_text, ENT_QUOTES, 'UTF-8');
             $comment_html = "<div id=\"comment-{$newId}\" class=\"comment-item\">"
+                . "<p style=\"margin-top: 0;\"><strong>" . htmlspecialchars($_SESSION['username'] ?? 'ゲスト利用者', ENT_QUOTES, 'UTF-8') . "</strong></p>"
                 . "<p>{$safe_text}</p>"
-                . "<span class=\"likes-count\" id=\"like-count-{$newId}\">0</span>"
-                . "<button type=\"button\" onclick=\"toggleLike('{$newId}')\">いいね</button>"
+                . "<button type=\"button\" onclick=\"toggleLike({$newId})\" class=\"mt-2 border border-gray-300 px-3 py-1 rounded-full text-sm lift-button\">"
+                . "👍 <span id=\"like-count-{$newId}\">0</span>"
+                . "</button>"
                 . "</div>";
 
             echo json_encode([
@@ -280,6 +282,7 @@ try {
             validate_csrf();
 
             $type = $_POST['type'] ?? 'draft'; // answer or survey
+            $question_id = trim((string)($_POST['question_id'] ?? ''));
             $payload = json_decode($_POST['payload'] ?? '{}', true);
 
             if (session_status() === PHP_SESSION_NONE) {
@@ -287,14 +290,18 @@ try {
             }
 
             // セッション変数に保存（DB負荷を避け、メモリ上で管理）
-            $_SESSION['autosave'][$type] = [
+            if ($question_id === '') {
+                $question_id = 'default';
+            }
+
+            $_SESSION['autosave'][$type][$question_id] = [
                 'data' => $payload,
                 'timestamp' => date('H:i:s')
             ];
 
             echo json_encode([
                 'status' => 'success',
-                'saved_at' => $_SESSION['autosave'][$type]['timestamp']
+                'saved_at' => $_SESSION['autosave'][$type][$question_id]['timestamp']
             ]);
             break;
 

@@ -142,7 +142,7 @@ async function toggleLike(commentId) {
 
             // キリ番などの条件を満たした場合、音声演出を実行
             if (data.play_voice) {
-                const audio = new Audio('assets/iidesune_doukome.mp3');
+                const audio = new Audio('/assets/iidesune_doukome.mp3');
                 audio.play().catch(e => console.warn('音声再生がブラウザにブロックされました', e));
             }
         }
@@ -160,6 +160,7 @@ async function autoSave(type) {
     if (!formElement) return;
     // フォームの内容をまるごと取得（配列対応）
     const fd = new FormData(formElement);
+    const questionIdInput = formElement.querySelector('input[name="question_id"]');
     const formDataObj = {};
     for (const [k, v] of fd.entries()) {
         // name が配列形式（例: q0[]）の場合は末尾の [] を取り除いて正規化
@@ -176,6 +177,9 @@ async function autoSave(type) {
     const formData = new FormData();
     formData.append('action', 'save');
     formData.append('type', type);
+    if (questionIdInput && questionIdInput.value) {
+        formData.append('question_id', questionIdInput.value);
+    }
     formData.append('payload', JSON.stringify(formDataObj));
 
     const token = getCsrfToken();
