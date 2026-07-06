@@ -86,12 +86,12 @@ if ($success) {
     echo "<div class='flex justify-center gap-10'>";
     
     echo "<a href='result.php?question_id=" . h($q_key) . "' 
-             class='bg-blue-500 hover:bg-blue-700 text-white font-bold py-6 px-12 rounded-xl text-2xl transition flex items-center shadow-lg hover:shadow-xl'>
+                 class='bg-blue-500 hover:bg-blue-700 text-white font-bold py-6 px-12 rounded-xl text-2xl transition flex items-center shadow-lg hover:shadow-xl lift-button'>
              <i class='fa-solid fa-chart-pie mr-3'></i>集計結果を見る
           </a>";
     
     echo "<a href='index.php' 
-             class='bg-gray-500 hover:bg-gray-700 text-white font-bold py-6 px-12 rounded-xl text-2xl transition flex items-center shadow-lg hover:shadow-xl'>
+                 class='bg-gray-500 hover:bg-gray-700 text-white font-bold py-6 px-12 rounded-xl text-2xl transition flex items-center shadow-lg hover:shadow-xl lift-button'>
              <i class='fa-solid fa-house mr-3'></i>ホームに戻る
           </a>";
 

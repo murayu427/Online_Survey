@@ -485,6 +485,40 @@ try {
         .btn-edit-green { background-color: #d2f9d2; } 
         .btn-answer { background-color: #b7e9f9; } 
 
+        .oval-btn.lift-button,
+        .action-inline-btn.lift-button,
+        .sort-trigger-btn.lift-button,
+        .sort-option.lift-button,
+        .page-top-pink-btn.lift-button,
+        .withdraw-buttons .btn-back.lift-button,
+        .withdraw-buttons .btn-submit.lift-button {
+            transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, filter 0.18s ease;
+            transform: translateY(0);
+        }
+
+        .oval-btn.lift-button:hover,
+        .action-inline-btn.lift-button:hover,
+        .sort-trigger-btn.lift-button:hover,
+        .sort-option.lift-button:hover,
+        .page-top-pink-btn.lift-button:hover,
+        .withdraw-buttons .btn-back.lift-button:hover,
+        .withdraw-buttons .btn-submit.lift-button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+            filter: brightness(1.05);
+        }
+
+        .oval-btn.lift-button:active,
+        .action-inline-btn.lift-button:active,
+        .sort-trigger-btn.lift-button:active,
+        .sort-option.lift-button:active,
+        .page-top-pink-btn.lift-button:active,
+        .withdraw-buttons .btn-back.lift-button:active,
+        .withdraw-buttons .btn-submit.lift-button:active {
+            transform: translateY(-1px) scale(0.99);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.16);
+        }
+
         .alert-time-text {
             color: #ff3333; 
             font-weight: bold;
@@ -705,16 +739,16 @@ try {
                 </div>
                 
                 <?php if (!$is_logged_in): ?>
-                    <a href="signup.php" class="oval-btn btn-signup">ユーザー登録 →</a>
-                    <a href="signin.php" class="oval-btn btn-signin">サインイン →</a>
+                    <a href="signup.php" class="oval-btn btn-signup lift-button">ユーザー登録 →</a>
+                    <a href="signin.php" class="oval-btn btn-signin lift-button">サインイン →</a>
                 <?php else: ?>
-                    <a href="unsubscription.php" class="oval-btn btn-withdraw">退会 →</a>
+                    <a href="unsubscription.php" class="oval-btn btn-withdraw lift-button">退会 →</a>
                     <form action="signout.php" method="post" style="margin:0;">
                         <input type="hidden" name="csrf_token" value="<?php echo h($_SESSION['csrf_token'] ?? ''); ?>">
-                        <button type="submit" class="oval-btn btn-signout">サインアウト →</button>
+                        <button type="submit" class="oval-btn btn-signout lift-button">サインアウト →</button>
                     </form>
-                    <a href="survey_form.php" class="oval-btn btn-create">アンケートフォーム作成 →</a>
-                    <a href="profile.php" class="oval-btn btn-profile">ユーザ情報の変更 →</a>
+                    <a href="survey_form.php" class="oval-btn btn-create lift-button">アンケートフォーム作成 →</a>
+                    <a href="profile.php" class="oval-btn btn-profile lift-button">ユーザ情報の変更 →</a>
                 <?php endif; ?>
             </div>
         </section>
@@ -788,11 +822,11 @@ try {
                                                 <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
                                             </div>
                                             <div class="survey-actions">
-                                                <button type="button" class="action-inline-btn btn-extend js-extend-btn" 
+                                                <button type="button" class="action-inline-btn btn-extend js-extend-btn lift-button" 
                                                         data-survey-id="<?php echo h($survey['survey_id']); ?>"
                                                         data-survey-title="<?php echo h($survey['title']); ?>">延長</button>
-                                                <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-orange">結果</a>
-                                                <a href="survey_form.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-edit-green">編集</a>
+                                                <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-orange lift-button">結果</a>
+                                                <a href="survey_form.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-edit-green lift-button">編集</a>
                                             </div>
                                         </div>
                                     <?php endforeach; ?>
@@ -857,8 +891,8 @@ try {
                                                 <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
                                             </div>
                                             <div class="survey-actions">
-                                                <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-orange">結果</a>
-                                                <a href="question.php?id=<?php echo h($survey['question_key']); ?>&mode=edit" class="action-inline-btn btn-edit-green">編集</a>
+                                                <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-orange lift-button">結果</a>
+                                                <a href="question.php?id=<?php echo h($survey['question_key']); ?>&mode=edit" class="action-inline-btn btn-edit-green lift-button">編集</a>
                                             </div>
                                         </div>
                                     <?php endforeach; ?>
@@ -936,7 +970,7 @@ try {
                                             <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
                                         </div>
                                         <div class="survey-actions">
-                                            <a href="question.php?id=<?php echo h($survey['question_key']); ?>" class="action-inline-btn btn-answer">回答(<?php echo h($start_date_str); ?>~)</a>
+                                            <a href="question.php?id=<?php echo h($survey['question_key']); ?>" class="action-inline-btn btn-answer lift-button">回答(<?php echo h($start_date_str); ?>~)</a>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -1004,7 +1038,7 @@ try {
                                             <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
                                         </div>
                                         <div class="survey-actions">
-                                            <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-red">結果(<?php echo h($deadline_str); ?>~)</a>
+                                            <a href="result.php?id=<?php echo h($survey['survey_id']); ?>" class="action-inline-btn btn-result-red lift-button">結果(<?php echo h($deadline_str); ?>~)</a>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -1069,7 +1103,7 @@ try {
         </div>
     </div> -->
 
-    <button type="button" class="page-top-pink-btn">▲<br> <br>TOP</button>
+    <button type="button" class="page-top-pink-btn lift-button">▲<br> <br>TOP</button>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
