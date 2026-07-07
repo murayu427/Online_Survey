@@ -24,6 +24,8 @@ if ($survey === null) {
 $survey_id = (int)$survey['survey_id'];
 // アンケートの仕様（質問の一覧など）を取得
 $spec_data = $survey['survey_spec'];
+// result_keyの抽出
+$result_key = $survey['result_key'];
 // 判明した survey_id を使って回答データを全件取得
 $responses = get_responses_by_survey_id($survey_id);
 $all_chart_data = [];
@@ -260,7 +262,7 @@ $last_chart_key = end($chart_keys);
         <?php } ?>
         </div>
     </section>
-
+    <?php print_r($result_key); ?>
     <div class="mt-12 flex gap-4">
         <a href="download.php?key=<?= htmlspecialchars($result_key) ?>&format=csv" target="_blank" class="text-blue-300 hover:underline lift-button">CSV形式でダウンロード</a>
         <a href="download.php?key=<?= htmlspecialchars($result_key) ?>&format=pdf" target="_blank" class="text-blue-300 hover:underline lift-button">PDF形式でダウンロード</a>
