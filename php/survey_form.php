@@ -318,19 +318,38 @@ body {
     margin-top: 20px;
 }
 
+.btn-delete {
+    background: #DC2626; /* 赤 */
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+
+
 </style>
 
 <script>
 // 質問追加（既存構造に合わせる）
 function addQuestion() {
-    const qArea = document.getElementById("questions");
-    const index = qArea.children.length;
+    const container = document.getElementById('questions');
+    const index = container.children.length;
 
-    const div = document.createElement("div");
-    div.className = "question-block";
+    const div = document.createElement('div');
+    div.className = 'question-block border p-3 mb-3';
+    div.id = `question-${index}`;
+
+    // index=0 のときは削除ボタンなし
+    const deleteButton =
+        index === 1
+        ? "" 
+        : `<button type="button" class="btn-delete" onclick="deleteQuestion(${index})">削除</button>`;
 
     div.innerHTML = `
-        <h3>質問${index + 1}</h3>
+        <h3>質問${index}</h3>
 
         <label>質問文</label>
         <input type="text" name="q_label[${index}]" class="input-text">
@@ -349,16 +368,29 @@ function addQuestion() {
 
         <label>結果表示形式</label>
         <select name="q_result_display[${index}]" class="input-select">
-            <option value="bar">ヒストグラム</option>
+            <option value="bar">ヒストグラフ</option>
             <option value="table">集計表</option>
             <option value="pie">円グラフ</option>
             <option value="pie3d">3D円グラフ</option>
             <option value="text">テキスト</option>
         </select>
+
+        ${deleteButton}
     `;
 
-    qArea.appendChild(div);
+    container.appendChild(div);
 }
+
+
+
+function deleteQuestion(index) {
+    const target = document.getElementById(`question-${index}`);
+    if (target) {
+        target.remove();
+    }
+}
+
+
 
 // 回答形式変更
 function toggleOptions(sel, index) {
@@ -431,7 +463,7 @@ window.addEventListener("load", () => {
 
 <!-- 3. 回答期限（元の datetime-local 方式） -->
 <div class="section">
-    <h2>6. 回答期限を選択してください</h2>
+    <h2>2. 回答期限を選択してください</h2>
 
     <label>開始日時</label>
     <input type="datetime-local" name="start_at" class="input-text"
@@ -452,7 +484,7 @@ window.addEventListener("load", () => {
 
 <!-- 5. 集計設定 -->
 <div class="section">
-    <h2>5. 年齢別、性別も集計しますか？</h2>
+    <h2>3. 年齢別、性別も集計しますか？</h2>
     <select name="agg_gender_age" class="input-select">
         <option value="yes" <?= !empty($spec['aggregate']['gender']) ? 'selected' : '' ?>>はい</option>
         <option value="no" <?= empty($spec['aggregate']['gender']) ? 'selected' : '' ?>>いいえ</option>
@@ -461,7 +493,7 @@ window.addEventListener("load", () => {
 
 <!-- 6. 質問一覧 -->
 <div class="section">
-    <h2>2. 質問を記入してください</h2>
+    <h2>4. 質問を記入してください</h2>
 
     <div id="questions">
         <?php if (!empty($spec['questions'])): ?>
