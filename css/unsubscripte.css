@@ -3,13 +3,14 @@ html, body {
   padding-top: 100px;
   height: 100%;
   text-align: center;
-  background-color: #164a84;
+  background-color: #1e2d5a;
 }
 /* bodyにflexを指定 */
 body {
   display: flex;
   flex-direction: column;
   min-height: 100vh; /* 画面の高さいっぱいに広げる */
+  font-family: 'Hiragino Kaku Gothic ProN', 'Segoe UI', Meiryo, sans-serif;
 }
 
 main {
@@ -33,16 +34,33 @@ form {
 }
 
 form button {
-    width: 100px;
-    border: 1px solid #ccc; 
+    width: 140px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Segoe UI', Meiryo, sans-serif;
+    font-weight: 700;
+    color: #111827;
+    cursor: pointer;
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, filter 0.18s ease;
+    transform: translateY(0);
+}
+
+form button:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+    filter: brightness(1.05);
+}
+
+form button:active {
+    transform: translateY(-1px) scale(0.99);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.16);
 }
 
 #back {
-    background-color: #7b7c7d;
-    border-radius: 20%;
+    background-color: #b7b7b7;
 }
 
 #unsbscripte {
-    background-color: #df7163;
-    border-radius: 20%;
+    background-color: #f28b82;
 }
