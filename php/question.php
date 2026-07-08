@@ -3,6 +3,18 @@ require "db.php";
 require_once 'auth.php';
 require_once 'security.php';
 require_once 'error.php';
+
+function checkEndAt($end_at,$q_key){
+    $now_dt = new DateTime();
+    $end_at_dt = new DateTime($end_at);
+    if($end_at_dt > $now_dt){
+        return;
+    }else{
+        header("Location: result.php?id=".$q_key);
+        exit();
+    }
+}
+
 $q_key = $_GET['question_id'] ?? $_GET['id'] ?? '';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -49,7 +61,7 @@ if(is_null($r)){
     renderError('存在しないページです',500,'APP','WARNING',Null,'存在しないページ');
 }else{
     $json = $r["survey_spec"];
-
+    checkEndAt($r["end_at"], $q_key);
     $current_user_id = $_SESSION['user_id'] ?? null;
     if ($current_user_id !== null && !empty($r['survey_id'])) {
         $previous_response = get_response_by_survey_and_user((int)$r['survey_id'], (int)$current_user_id);

@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(notiPopup) notiPopup.classList.add('hidden');
       const filtered = surveyData.filter(s => s.title.includes(val));
       resultsContainer.innerHTML = filtered.length > 0 
-        ? filtered.map(s => `<a href="question.php?id=${s.question_key}" class="p-2 hover:bg-gray-100 cursor-pointer">${s.title}</a>`).join('')
+        ? filtered.map(s => `<a href="question.php?id=${s.question_key}" class="block p-2 hover:bg-gray-100 cursor-pointer">${s.title}</a>`).join('')
         : '<div class="p-2 text-gray-400">該当なし</div>';
     } else {
       searchPopup.classList.add('hidden');
