@@ -732,7 +732,7 @@ try {
             <div class="auth-control-panel">
                 <div class="auth-status-text">
                     <?php if ($is_logged_in): ?>
-                        ログイン中: <strong><?php echo h($_SESSION['account_name'] ?? '会員ユーザー'); ?></strong> 様
+                        ログイン中: <strong><?php echo h($_SESSION['username'] ?? '会員ユーザー'); ?></strong> 様
                     <?php else: ?>
                         ゲストユーザー様
                     <?php endif; ?>
@@ -791,7 +791,6 @@ try {
                                 <div class="sort-popup-close">×</div>
                                 <div class="sort-option-list">
                                     <button class="sort-option" data-sort-param="s_cre" data-page-param="p_cre" data-sort-type="start">新着順</button>
-                                    <button class="sort-option" data-sort-param="s_cre" data-page-param="p_cre" data-sort-type="deadline">回答期限が近い順</button>
                                     <button class="sort-option" data-sort-param="s_cre" data-page-param="p_cre" data-sort-type="responses">回答数が多い順</button>
                                 </div>
                             </div>
@@ -865,7 +864,6 @@ try {
                                 <div class="sort-popup-close">×</div>
                                 <div class="sort-option-list">
                                     <button class="sort-option" data-sort-param="s_ans" data-page-param="p_ans" data-sort-type="start">新着順</button>
-                                    <button class="sort-option" data-sort-param="s_ans" data-page-param="p_ans" data-sort-type="deadline">回答期限が近い順</button>
                                     <button class="sort-option" data-sort-param="s_ans" data-page-param="p_ans" data-sort-type="responses">回答数が多い順</button>
                                 </div>
                             </div>
@@ -886,9 +884,9 @@ try {
                                     <?php foreach ($answered_surveys as $survey): ?>
                                         <div class="survey-row">
                                             <div class="survey-info">
-                                                <div class="survey-date">締め切り日: <?php echo h(date('Y.m.d', strtotime($survey['deadline'] ?? ''))); ?></div>
+                                                <div class="survey-date">終了日: <?php echo h(date('Y.m.d', strtotime($survey['deadline'] ?? ''))); ?></div>
                                                 <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
-                                                <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
+                                                <div class="survey-creator">作成者: <?php echo h($survey['creator'] ?? '不明'); ?></div>
                                             </div>
                                             <div class="survey-actions">
                                                 <a href="result.php?id=<?php echo h($survey['question_key']); ?>" class="action-inline-btn btn-result-orange lift-button">結果</a>
@@ -932,7 +930,6 @@ try {
                             <div class="sort-popup-close">×</div>
                             <div class="sort-option-list">
                                 <button class="sort-option" data-sort-param="s_act" data-page-param="p_act" data-sort-type="start">新着順</button>
-                                <button class="sort-option" data-sort-param="s_act" data-page-param="p_act" data-sort-type="deadline">回答期限が近い順</button>
                                 <button class="sort-option" data-sort-param="s_act" data-page-param="p_act" data-sort-type="responses">回答数が多い順</button>
                             </div>
                         </div>
@@ -958,7 +955,7 @@ try {
                                     <div class="survey-row">
                                         <div class="survey-info">
                                             <div class="survey-date">
-                                                期限: 
+                                                終了時刻: 
                                                 <span id="public-date-box-<?php echo h($survey['survey_id']); ?>">
                                                     <?php echo h(date('Y.m.d H:i', strtotime($survey['deadline'] ?? ''))); ?>
                                                 </span>
@@ -967,9 +964,10 @@ try {
                                                 <?php endif; ?>
                                             </div>
                                             <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
-                                            <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
+                                            <div class="survey-creator">作成者: <?php echo h($survey['creator'] ?? '不明'); ?></div>
                                         </div>
                                         <div class="survey-actions">
+                                            <a href="result.php?id=<?php echo h($survey['question_key']); ?>" class="action-inline-btn btn-result-orange lift-button">結果</a>
                                             <a href="question.php?id=<?php echo h($survey['question_key']); ?>" class="action-inline-btn btn-answer lift-button">回答(<?php echo h($start_date_str); ?>~)</a>
                                         </div>
                                     </div>
@@ -1009,7 +1007,6 @@ try {
                             <div class="sort-popup-close">×</div>
                             <div class="sort-option-list">
                                 <button class="sort-option" data-sort-param="s_res" data-page-param="p_res" data-sort-type="start">新着順</button>
-                                <button class="sort-option" data-sort-param="s_res" data-page-param="p_res" data-sort-type="deadline">回答期限が近い順</button>
                                 <button class="sort-option" data-sort-param="s_res" data-page-param="p_res" data-sort-type="responses">回答数が多い順</button>
                             </div>
                         </div>
@@ -1035,7 +1032,7 @@ try {
                                         <div class="survey-info">
                                             <div class="survey-date">終了日: <?php echo h(date('Y.m.d', strtotime($survey['deadline'] ?? ''))); ?></div>
                                             <h4 class="survey-title">「<?php echo h($survey['title']); ?>〜」</h4>
-                                            <div class="survey-creator">作成: <?php echo h($survey['creator'] ?? '不明'); ?></div>
+                                            <div class="survey-creator">作成者: <?php echo h($survey['creator'] ?? '不明'); ?></div>
                                         </div>
                                         <div class="survey-actions">
                                             <a href="result.php?id=<?php echo h($survey['question_key']); ?>" class="action-inline-btn btn-result-red lift-button">結果(<?php echo h($deadline_str); ?>~)</a>
