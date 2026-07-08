@@ -33,12 +33,12 @@ $text_question_results = [];
 
 // 仕様書に定義されている質問（q1, q2...）をすべてループして集計
 if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
-    foreach ($spec_data['questions'] as $q) {
+    foreach ($spec_data['questions'] as $index => $q) {
         // $q が配列ではない、または 'id' が存在しない不正なデータなら無視して次へ進む
-        if (!is_array($q) || !isset($q['id'])) {
+        if (!is_array($q)){# || !isset($q['id'])) {
             continue;
         }
-        $q_id = $q['id'];                // 例: 'q1', 'q2'
+        $q_id = "q".$index;                // 例: 'q1', 'q2'
         $q_title = $q['label'] ?? $q['title'] ?? $q_id; // 質問のタイトル
         $q_type = $q['type'] ?? '';
 
@@ -72,12 +72,10 @@ if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
         }
         // この質問に対する選択肢ごとの票数を数える
         $counts = [];
-        foreach ($responses as $response) {
+        foreach ($responses as $index => $response) {
             $answers = $response['answer_data'] ?? [];
-            
             if (isset($answers[$q_id])) {
                 $ans = $answers[$q_id];
-                
                 // チェックボックスなどの複数回答（配列）の場合
                 if (is_array($ans)) {
                     foreach ($ans as $a) {
@@ -93,7 +91,6 @@ if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
                 }
             }
         }
-
         // Chart.jsで扱えるようにラベルとデータ（票数）に分解
         $labels = [];
         $data = [];
@@ -262,7 +259,6 @@ $last_chart_key = end($chart_keys);
         <?php } ?>
         </div>
     </section>
-    <?php print_r($result_key); ?>
     <div class="mt-12 flex gap-4">
         <a href="download.php?key=<?= htmlspecialchars($result_key) ?>&format=csv" target="_blank" class="text-blue-300 hover:underline lift-button">CSV形式でダウンロード</a>
         <a href="download.php?key=<?= htmlspecialchars($result_key) ?>&format=pdf" target="_blank" class="text-blue-300 hover:underline lift-button">PDF形式でダウンロード</a>
