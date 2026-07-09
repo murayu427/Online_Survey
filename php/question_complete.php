@@ -43,30 +43,7 @@ foreach (($spec['questions'] ?? []) as $i => $question) {
     }
 }
 
-$birth_date_str = $_POST['birthday'] ?? '';
-
-// 性別の取り出しとマッピング（DB側は整数カラムなのでコードに変換）
-$gender_raw = $_POST['Q_gender'] ?? null;
-$gender_map = [
-    'man' => 1,
-    'woman' => 2,
-    'other' => 3,
-    'doNotAnswer' => null,
-];
-$gender = array_key_exists($gender_raw, $gender_map) ? $gender_map[$gender_raw] : null;
-
-// 生年月日から年齢を算出（年齢は満年齢）
-$age = null;
-if (!empty($birth_date_str)) {
-    $dob = DateTime::createFromFormat('Y-m-d', $birth_date_str);
-    if ($dob !== false) {
-        $today = new DateTime('now');
-        $interval = $today->diff($dob);
-        $age = $interval->y;
-    }
-}
-
-$success = upsert_response($survey_id, $user_id, $answer_data, $gender, $age);
+$success = upsert_response($survey_id, $user_id, $answer_data);
 
 if ($success) {
     unset($_SESSION['autosave']);

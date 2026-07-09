@@ -85,18 +85,6 @@ foreach (($json['questions'] ?? []) as $i => $question) {
     echo "</div>";
 }
 
-if (isset($_POST['Q_gender'])) {
-    echo "<div class='question'>";
-    echo "<h3>性別</h3>" . h($_POST['Q_gender']);
-    echo "<input type='hidden' name='Q_gender' value='" . h($_POST['Q_gender']) . "'>";
-    echo "</div>";
-}
-if (isset($_POST['birthday'])) {
-    echo "<div class='question'>";
-    echo "<h3>生年月日</h3>" . h($_POST['birthday']);
-    echo "<input type='hidden' name='birthday' value='" . h($_POST['birthday']) . "'>";
-    echo "</div>";
-}
 echo "<div id='submit'>";
 echo "<button id='reviseBt' class='lift-button' type='submit' formaction='question.php?question_id=" . h($q_key) . "'>修正する</button>";
 echo "<button id='submitBt' class='lift-button' type='submit'>送信する</button>";

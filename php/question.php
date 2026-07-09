@@ -3,6 +3,18 @@ require "db.php";
 require_once 'auth.php';
 require_once 'security.php';
 require_once 'error.php';
+
+function checkEndAt($end_at,$q_key){
+    $now_dt = new DateTime();
+    $end_at_dt = new DateTime($end_at);
+    if($end_at_dt > $now_dt){
+        return;
+    }else{
+        header("Location: result.php?id=".$q_key);
+        exit();
+    }
+}
+
 $q_key = $_GET['question_id'] ?? $_GET['id'] ?? '';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -24,7 +36,6 @@ $autosave = [];
 $errors = [];
 $previous_response = null;
 $previous_answers = [];
-$selected_gender = '';
 
 foreach ($raw_autosave as $key => $value) {
 
@@ -49,22 +60,12 @@ if(is_null($r)){
     renderError('存在しないページです',500,'APP','WARNING',Null,'存在しないページ');
 }else{
     $json = $r["survey_spec"];
-
+    checkEndAt($r["end_at"], $q_key);
     $current_user_id = $_SESSION['user_id'] ?? null;
     if ($current_user_id !== null && !empty($r['survey_id'])) {
         $previous_response = get_response_by_survey_and_user((int)$r['survey_id'], (int)$current_user_id);
     }
     $previous_answers = is_array($previous_response['answer_data'] ?? null) ? $previous_response['answer_data'] : [];
-    $previous_gender = $previous_response['respondent_gender'] ?? null;
-    if ($previous_gender !== null) {
-        if ((int)$previous_gender === 1) {
-            $selected_gender = 'man';
-        } elseif ((int)$previous_gender === 2) {
-            $selected_gender = 'woman';
-        } elseif ((int)$previous_gender === 3) {
-            $selected_gender = 'other';
-        }
-    }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -155,27 +156,6 @@ if(is_null($r)){
         }
         echo "</div>"; 
     }
-    $gender_value = $_POST['Q_gender'] ?? $autosave["Q_gender"] ?? $selected_gender;
-    echo "<div class='question'>";
-    echo "<h2>性別を選択してください</h2>";
-    echo "<label class='option'>";
-    echo "<input type='radio' name='Q_gender' value='man' required" . ($gender_value === 'man' ? ' checked' : '') . ">";
-    echo "男性</label>";
-    echo "<label class='option'>";
-    echo "<input type='radio' name='Q_gender' value='woman' required" . ($gender_value === 'woman' ? ' checked' : '') . ">";
-    echo "女性</label>";
-    echo "<label class='option'>";
-    echo "<input type='radio' name='Q_gender' value='other' required" . ($gender_value === 'other' ? ' checked' : '') . ">";
-    echo "その他</label>";
-    echo "<label class='option'>";
-    echo "<input type='radio' name='Q_gender' value='doNotAnswer' required" . ($gender_value === 'doNotAnswer' ? ' checked' : '') . ">";
-    echo "回答しない</label>";
-    echo "</div><div class=question>";
-    echo "<h2>生年月日を入力してください</h2>";
-    $max_date = date('Y-m-d');
-    $birthday_value = $_POST['birthday'] ?? $autosave['birthday'] ?? '';
-    echo "<input type='date' name='birthday' min='1900-01-01' max='{$max_date}' value='" . htmlspecialchars((string)$birthday_value, ENT_QUOTES, 'UTF-8') . "' required><br>";
-    echo "</div>";
     echo "<div id='submit'><button type='submit' class='lift-button'>送信画面へ</button></div>";
     echo "</form>";
     echo "<script src='../js/api_manager.js'></script>";

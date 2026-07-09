@@ -78,7 +78,7 @@ if ($format === 'csv') {
 
     echo "\xEF\xBB\xBF";
     $output = fopen('php://output', 'w');
-    fputcsv($output, ['回答ID', 'ユーザーID', '回答データ', '年齢', '性別', '回答日時'], ",", '"', "");
+    fputcsv($output, ['回答ID', 'ユーザーID', '回答データ', '回答日時'], ",", '"', "");
 
     foreach ($results as $row) {
         $answer_array = $row['answer_data'] ?? [];
@@ -94,22 +94,13 @@ if ($format === 'csv') {
         }
         $answer_text = !empty($readable_answers) ? implode(' ', $readable_answers) : '回答なし';
         $formatted_date = !empty($row['answered_at']) ? date('Y/m/d H:i', strtotime($row['answered_at'])) : '未回答';
-        
-        $gender = $row['respondent_gender'] ?? '未回答';
-        if ($gender === 1 || $gender === '1') { $gender = '男性'; }
-        elseif ($gender === 2 || $gender === '2') { $gender = '女性'; }
-        elseif ($gender === 3 || $gender === '3') { $gender = 'その他'; }
-
-        $age = !empty($row['respondent_age']) ? $row['respondent_age'] . '歳' : '未回答';
-        
+            
         fputcsv($output, [
             $row['response_id'] ?? '',
             $row['user_id'] ?? '匿名(未ログイン)',
-            $answer_text,
-            $age,
-            $gender,
-            $formatted_date
-        ], ",", '"', "");
+            json_encode($answer_array, JSON_UNESCAPED_UNICODE), 
+            $row['answered_at'] ?? ''
+        ]);
     }
     fclose($output);
     exit;
@@ -123,11 +114,11 @@ if ($format === 'pdf') {
     $text = "Survey Report (Survey ID: " . $survey_id . ")\n";
     $text .= "---------------------------------------------------------------------------------\n";
     
-    // 各列の文字幅：ユーザーID(10文字), 性別(6文字), 年齢(6文字), 回答日時(16文字)
-    $format_string = " %-10s | %-6s | %-6s | %-16s | %s\n";
+    // 各列の文字幅：ユーザーID(10文字), 回答日時(16文字)
+    $format_string = " %-10s | %-16s | %s\n";
     
     // ⭕️ ヘッダーを文字化けしない英字表記に変更
-    $text .= sprintf($format_string, "USER ID", "GENDER", "AGE", "ANSWER DATE", "ANSWERS");
+    $text .= sprintf($format_string, "USER ID", "ANSWER DATE", "ANSWERS");
     $text .= "---------------------------------------------------------------------------------\n";
     
     foreach ($results as $row) {
@@ -136,15 +127,6 @@ if ($format === 'pdf') {
         if (!empty($row['user_id'])) {
             $user_display_id = (string)$row['user_id'];
         }
-
-        // 2. 性別を英語表記に変更（文字化け防止）
-        $gender = 'Unknown';
-        if ($row['respondent_gender'] === 1 || $row['respondent_gender'] === '1') { $gender = 'Male'; }
-        elseif ($row['respondent_gender'] === 2 || $row['respondent_gender'] === '2') { $gender = 'Female'; }
-        elseif ($row['respondent_gender'] === 3 || $row['respondent_gender'] === '3') { $gender = 'Other'; }
-
-        // 3. 年齢を英数字表記に変更
-        $age = !empty($row['respondent_age']) ? $row['respondent_age'] . 'yo' : 'Unknown';
         
         // 4. 日時の変換（すでに数字なのでそのまま）
         $formatted_date = !empty($row['answered_at']) ? date('Y/m/d H:i', strtotime($row['answered_at'])) : 'Unknown';
@@ -170,8 +152,6 @@ if ($format === 'pdf') {
         $text .= sprintf(
             $format_string,
             $user_display_id,
-            $gender,
-            $age,
             $formatted_date,
             $answer_text
         );

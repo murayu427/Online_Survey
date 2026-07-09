@@ -33,12 +33,12 @@ $text_question_results = [];
 
 // 仕様書に定義されている質問（q1, q2...）をすべてループして集計
 if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
-    foreach ($spec_data['questions'] as $q) {
+    foreach ($spec_data['questions'] as $index => $q) {
         // $q が配列ではない、または 'id' が存在しない不正なデータなら無視して次へ進む
-        if (!is_array($q) || !isset($q['id'])) {
+        if (!is_array($q)){# || !isset($q['id'])) {
             continue;
         }
-        $q_id = $q['id'];                // 例: 'q1', 'q2'
+        $q_id = "q".$index;                // 例: 'q1', 'q2'
         $q_title = $q['label'] ?? $q['title'] ?? $q_id; // 質問のタイトル
         $q_type = $q['type'] ?? '';
 
@@ -72,12 +72,10 @@ if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
         }
         // この質問に対する選択肢ごとの票数を数える
         $counts = [];
-        foreach ($responses as $response) {
+        foreach ($responses as $index => $response) {
             $answers = $response['answer_data'] ?? [];
-            
             if (isset($answers[$q_id])) {
                 $ans = $answers[$q_id];
-                
                 // チェックボックスなどの複数回答（配列）の場合
                 if (is_array($ans)) {
                     foreach ($ans as $a) {
@@ -93,7 +91,6 @@ if (isset($spec_data['questions']) && is_array($spec_data['questions'])) {
                 }
             }
         }
-
         // Chart.jsで扱えるようにラベルとデータ（票数）に分解
         $labels = [];
         $data = [];
@@ -203,9 +200,6 @@ $last_chart_key = end($chart_keys);
                 </div>
             </div>
         <?php } ?>
-    <?php else:?>
-        <p>回答はまだありません</p>
-    <?php endif?>
     </div>
 
     <?php if ($last_chart_key !== false) { 
@@ -222,51 +216,53 @@ $last_chart_key = end($chart_keys);
     <?php } ?>
 
     <?php if (!empty($text_question_results)): ?>
-    <section class="comment-section">
-        <h2 class="text-xl font-semibold mb-4">📝 自由記述の結果</h2>
-        <?php foreach ($text_question_results as $textResult): ?>
-            <div class="comment-box" style="margin-bottom: 16px;">
-                <h3 class="text-lg font-semibold mb-2">質問: <?= htmlspecialchars((string)$textResult['title']) ?></h3>
-                <?php if (!empty($textResult['answers'])): ?>
-                    <?php foreach ($textResult['answers'] as $answer): ?>
-                        <p style="text-indent: 0; margin-bottom: 0.5rem;">・<?= nl2br(htmlspecialchars($answer)) ?></p>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p style="text-indent: 0; margin-bottom: 0;">回答はありません。</p>
-                <?php endif; ?>
+        <section class="comment-section">
+            <h2 class="text-xl font-semibold mb-4">📝 自由記述の結果</h2>
+            <?php foreach ($text_question_results as $textResult): ?>
+                <div class="comment-box" style="margin-bottom: 16px;">
+                    <h3 class="text-lg font-semibold mb-2">質問: <?= htmlspecialchars((string)$textResult['title']) ?></h3>
+                    <?php if (!empty($textResult['answers'])): ?>
+                        <?php foreach ($textResult['answers'] as $answer): ?>
+                            <p style="text-indent: 0; margin-bottom: 0.5rem;">・<?= nl2br(htmlspecialchars($answer)) ?></p>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p style="text-indent: 0; margin-bottom: 0;">回答はありません。</p>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </section>
+        <?php endif; ?>
+
+        <section class="comment-section">
+            <h2 class="text-xl font-semibold mb-4">💬 コメント</h2>
+
+            <div class="comment-input-wrap">
+                <textarea id="comment-text-area" rows="3" class="w-full p-2 text-black rounded" placeholder="コメントを入力してください"></textarea><br>
+                <button onclick="postComment()" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded lift-button">送信</button>
             </div>
-        <?php endforeach; ?>
-    </section>
-    <?php endif; ?>
 
-    <section class="comment-section">
-        <h2 class="text-xl font-semibold mb-4">💬 コメント</h2>
-
-        <div class="comment-input-wrap">
-            <textarea id="comment-text-area" rows="3" class="w-full p-2 text-black rounded" placeholder="コメントを入力してください"></textarea><br>
-            <button onclick="postComment()" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded lift-button">送信</button>
-        </div>
-
-        <div id="comment-list" style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
-        <?php foreach ($comment_list_data as $row) { 
-            $name = $row["account_name"] ?? $row["username"] ?? 'ゲスト利用者';
-            $comment = $row["comment"];
-        ?>
-            <div class="comment-item">
-                <p style="margin-top: 0;"><strong><?= htmlspecialchars($name) ?></strong></p>
-                <p><?= nl2br(htmlspecialchars($comment)) ?></p>
-                <button type="button" onclick="toggleLike(<?= (int)$row['comment_id'] ?>)" class="mt-2 border border-gray-300 px-3 py-1 rounded-full text-sm lift-button">
-                    👍 <span id="like-count-<?= (int)$row['comment_id'] ?>"><?= $row["like_count"] ?? 0 ?></span>
-                </button>
+            <div id="comment-list" style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
+            <?php foreach ($comment_list_data as $row) { 
+                $name = $row["account_name"] ?? $row["username"] ?? 'ゲスト利用者';
+                $comment = $row["comment"];
+            ?>
+                <div class="comment-item">
+                    <p style="margin-top: 0;"><strong><?= htmlspecialchars($name) ?></strong></p>
+                    <p><?= nl2br(htmlspecialchars($comment)) ?></p>
+                    <button type="button" onclick="toggleLike(<?= (int)$row['comment_id'] ?>)" class="mt-2 border border-gray-300 px-3 py-1 rounded-full text-sm lift-button">
+                        👍 <span id="like-count-<?= (int)$row['comment_id'] ?>"><?= $row["like_count"] ?? 0 ?></span>
+                    </button>
+                </div>
+            <?php } ?>
             </div>
-        <?php } ?>
+        </section>
+        <div class="mt-12 flex gap-4">
+            <a href="download.php?key=<?= htmlspecialchars($result_key) ?>&format=csv" target="_blank" class="text-blue-300 hover:underline">CSV形式でダウンロード</a>
+            <a href="download.php?key=<?= htmlspecialchars($result_key) ?>&format=pdf" target="_blank" class="text-blue-300 hover:underline">PDF形式でダウンロード</a>
         </div>
-    </section>
-    <?php print_r($result_key); ?>
-    <div class="mt-12 flex gap-4">
-        <a href="download.php?key=<?= htmlspecialchars($result_key) ?>&format=csv" target="_blank" class="text-blue-300 hover:underline lift-button">CSV形式でダウンロード</a>
-        <a href="download.php?key=<?= htmlspecialchars($result_key) ?>&format=pdf" target="_blank" class="text-blue-300 hover:underline lift-button">PDF形式でダウンロード</a>
-    </div>
+    <?php else:?>
+        <p>回答はまだありません</p>
+    <?php endif?>
 </main>
 
 <form id="main-form" style="display:none;"></form>

@@ -5,7 +5,8 @@ require_once __DIR__ . '/error.php';
 セッション開始関数
 ====================*/
 function start_sess(){
-    if(session_status() == PHP_SESSION_NONE){
+    //セッションが開始されていない場合は開始する
+    if(session_status() === PHP_SESSION_NONE){
         ini_set('session.gc_maxlifetime', 3600); // サーバ側の有効期限を1時間に設定する
         ini_set('session.use_strict_mode', 1); // セッションIDの固定攻撃を防止
 
@@ -23,6 +24,11 @@ function start_sess(){
         ]);
 
         session_start();
+    }
+
+    // セッションの有効期限を更新
+    if(session_status() === PHP_SESSION_ACTIVE){
+        $_SESSION['last_acc'] = time();
     }
 }
 

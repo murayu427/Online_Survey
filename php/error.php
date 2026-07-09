@@ -193,10 +193,17 @@ function renderApiError(
     clearOutputBuffers();
     http_response_code($httpCode);
     header('Content-Type: application/json; charset=UTF-8');
-    echo json_encode([
+
+    $payload = [
         'status' => 'error',
         'message' => $message,
-    ], JSON_UNESCAPED_UNICODE);
+    ];
+
+    if ($e !== null) {
+        $payload['detail'] = formatThrowableMessage($e);
+    }
+
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
     exit;
 }
 

@@ -1,5 +1,5 @@
 -- schema.sql
--- ER図0530修正.pdf に基づく PostgreSQL テーブル定義
+-- ER図0709修正.pdf に基づく PostgreSQL テーブル定義
 
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
@@ -35,8 +35,6 @@ CREATE TABLE responses (
     survey_id INT NOT NULL REFERENCES surveys(survey_id) ON DELETE CASCADE,
     user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
     answer_data JSONB NOT NULL,
-    respondent_age INT,
-    respondent_gender INT,
     answered_at TIMESTAMPTZ NOT NULL,
     UNIQUE (survey_id, user_id)
 );

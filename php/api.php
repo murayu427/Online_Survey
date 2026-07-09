@@ -134,6 +134,8 @@ function isValidContent(?string $text): bool
 
 // 2. 共通レスポンスヘッダーの設定
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 
 // 3. リクエストメソッドの検証 (POST以外は受け付けない)
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
