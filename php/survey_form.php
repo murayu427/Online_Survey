@@ -32,11 +32,6 @@ $survey_key = null;
 $spec = [
     'title'       => '',
     'Survey_tag'  => [],
-    'aggregate'   => [
-        'gender'       => false,
-        'age'          => false,
-        'gender_split' => false,
-    ],
     'questions'   => [],
     'start_at'    => '',
     'end_at'      => '',
@@ -78,10 +73,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($start_at === '' || $end_at === '') {
         $errors[] = '開始日時と終了日時を入力してください。';
     }
-
-    $agg_gender       = !empty($_POST['agg_gender']);
-    $agg_age          = !empty($_POST['agg_age']);
-    $agg_gender_split = !empty($_POST['agg_gender_split']);
 
     $q_labels         = $_POST['q_label']         ?? [];
     $q_types          = $_POST['q_type']          ?? [];
@@ -172,11 +163,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $spec = [
             'title'       => $description,
             'Survey_tag'  => $tags,
-            'aggregate'   => [
-                'gender'       => $agg_gender,
-                'age'          => $agg_age,
-                'gender_split' => $agg_gender_split,
-            ],
             'questions'   => $questions,
             'start_at'    => $start_at,
             'end_at'      => $end_at,
@@ -692,15 +678,6 @@ window.addEventListener("load", () => {
         <h2>タグ（カンマ区切り）</h2>
         <input type="text" name="tags" class="input-text"
                value="<?= htmlspecialchars(implode(',', $spec['Survey_tag'] ?? []), ENT_QUOTES, 'UTF-8') ?>">
-    </div>
-
-    <!-- 5. 集計設定 -->
-    <div class="section">
-        <h2>3. 年齢別、性別も集計しますか？</h2>
-        <select name="agg_gender_age" class="input-select">
-            <option value="yes" <?= !empty($spec['aggregate']['gender']) ? 'selected' : '' ?>>はい</option>
-            <option value="no" <?= empty($spec['aggregate']['gender']) ? 'selected' : '' ?>>いいえ</option>
-        </select>
     </div>
 
     <!-- 6. 質問一覧 -->

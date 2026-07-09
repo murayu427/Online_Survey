@@ -200,7 +200,7 @@ function get_surveys_list(int $limit, int $offset): array
 }
 
 /**
- * アンケートのタイトルを全件取得する
+ * アンケートのタイトルとタグを全件取得する
  */
 
 function get_all_survey_titles(): array
@@ -522,7 +522,7 @@ function get_expired_surveys_to_notify(int $user_id): array
  */
 function get_responses_by_survey_id(int $survey_id): array
 {
-    $sql = 'SELECT response_id, survey_id, user_id, answer_data, respondent_age, respondent_gender, answered_at FROM responses WHERE survey_id = :survey_id ORDER BY answered_at ASC';
+    $sql = 'SELECT response_id, survey_id, user_id, answer_data, answered_at FROM responses WHERE survey_id = :survey_id ORDER BY answered_at ASC';
     $stmt = executeQuery($sql, [':survey_id' => $survey_id]);
     $responses = $stmt->fetchAll();
 
@@ -542,7 +542,7 @@ function get_response_by_survey_and_user(int $survey_id, ?int $user_id): ?array
         return null;
     }
 
-    $sql = 'SELECT response_id, survey_id, user_id, answer_data, respondent_age, respondent_gender, answered_at
+    $sql = 'SELECT response_id, survey_id, user_id, answer_data, answered_at
             FROM responses
             WHERE survey_id = :survey_id AND user_id = :user_id
             ORDER BY answered_at DESC, response_id DESC
@@ -561,24 +561,24 @@ function get_response_by_survey_and_user(int $survey_id, ?int $user_id): ?array
 /**
  * 回答を登録する（既存回答があれば更新）
  */
-function upsert_response(int $survey_id, ?int $user_id, array $answer_data, ?string $gender, ?string $age): bool
+function upsert_response(int $survey_id, ?int $user_id, array $answer_data): bool
 {
     $payload = json_encode($answer_data, JSON_UNESCAPED_UNICODE);
     if ($payload === false) {
         throw new RuntimeException('Failed to encode answer data.');
     }
     if ($user_id === null) {
-        $sql = 'INSERT INTO responses (survey_id, user_id, answer_data, answered_at, respondent_gender, respondent_age) 
-                VALUES (:survey_id, NULL, :answer_data, NOW(), :gender, :age)';
-        executeQuery($sql, [':survey_id' => $survey_id, ':answer_data' => $payload, ':gender' => $gender, ':age' => $age]);
+        $sql = 'INSERT INTO responses (survey_id, user_id, answer_data, answered_at) 
+                VALUES (:survey_id, NULL, :answer_data, NOW())';
+        executeQuery($sql, [':survey_id' => $survey_id, ':answer_data' => $payload]);
         return true;
     }
-    $sql = 'INSERT INTO responses (survey_id, user_id, answer_data, answered_at, respondent_gender, respondent_age) 
-            VALUES (:survey_id, :user_id, :answer_data, NOW(), :gender, :age) 
+    $sql = 'INSERT INTO responses (survey_id, user_id, answer_data, answered_at) 
+            VALUES (:survey_id, :user_id, :answer_data, NOW()) 
             ON CONFLICT (survey_id, user_id) 
             DO UPDATE SET answer_data = EXCLUDED.answer_data, answered_at = NOW()';
     
-    executeQuery($sql, [':survey_id' => $survey_id, ':user_id' => $user_id, ':answer_data' => $payload, ':gender' => $gender, ':age' => $age]);
+    executeQuery($sql, [':survey_id' => $survey_id, ':user_id' => $user_id, ':answer_data' => $payload]);
     return true;
 }
 

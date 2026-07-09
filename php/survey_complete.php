@@ -54,10 +54,6 @@ try {
         'Survey_tag'  => !empty($input['tags'])
             ? array_map('trim', explode(',', $input['tags']))
             : [],
-        'aggregate'   => [
-            'gender' => ($input['agg_gender_age'] ?? '') === 'yes',
-            'age'    => ($input['agg_gender_age'] ?? '') === 'yes',
-        ],
         'questions'   => [],
     ];
 
@@ -78,7 +74,6 @@ try {
 
     /* ------------------------------
        DB 登録（insert_survey）
-       ※ ここが今回の本丸
     ------------------------------ */
     $question_key = insert_survey(
         $creator_id,

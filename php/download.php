@@ -81,7 +81,7 @@ if ($format === 'csv') {
     $output = fopen('php://output', 'w');
 
     // CSVのヘッダー行（列名）を書き込み
-    fputcsv($output, ['回答ID', 'ユーザーID', '回答データ(JSON)', '年齢', '性別', '回答日時']);
+    fputcsv($output, ['回答ID', 'ユーザーID', '回答データ(JSON)', '回答日時']);
 
     // データ整形：ループ処理で1回答1行ずつ書き出し 
     foreach ($results as $row) {
@@ -92,8 +92,6 @@ if ($format === 'csv') {
             $row['response_id'] ?? '',
             $row['user_id'] ?? '匿名(未ログイン)',
             json_encode($answer_array, JSON_UNESCAPED_UNICODE), 
-            $row['respondent_age'] ?? '未回答',
-            $row['respondent_gender'] ?? '未回答',
             $row['answered_at'] ?? ''
         ]);
     }
@@ -119,15 +117,13 @@ if ($format === 'pdf') {
     $html = '<h1>アンケート回答一覧 (アンケートID: ' . htmlspecialchars((string)$survey_id) . ')</h1>'; 
     $html .= '<table border="1" cellpadding="5">'; 
     $html .= '<thead><tr style="background-color:#eee;">';
-    $html .= '<th>回答ID</th><th>ユーザーID</th><th>年齢</th><th>性別</th><th>回答日時</th>';
+    $html .= '<th>回答ID</th><th>ユーザーID</th><th>回答日時</th>';
     $html .= '</tr></thead><tbody>';
     
     foreach ($results as $row) {
         $html .= '<tr>';
         $html .= '<td>' . htmlspecialchars((string)($row['response_id'] ?? '')) . '</td>';
         $html .= '<td>' . htmlspecialchars((string)($row['user_id'] ?? '匿名')) . '</td>';
-        $html .= '<td>' . htmlspecialchars((string)($row['respondent_age'] ?? '-')) . '</td>';
-        $html .= '<td>' . htmlspecialchars((string)($row['respondent_gender'] ?? '-')) . '</td>';
         $html .= '<td>' . htmlspecialchars((string)($row['answered_at'] ?? '')) . '</td>';
         $html .= '</tr>';
     }
