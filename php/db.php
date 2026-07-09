@@ -205,9 +205,15 @@ function get_surveys_list(int $limit, int $offset): array
 
 function get_all_survey_titles(): array
 {
-    $sql = 'SELECT title,question_key FROM surveys';
+    $sql = "SELECT title, question_key, survey_spec->>'Survey_tag' AS tags FROM surveys";
     $stmt = executeQuery($sql);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($rows as &$row) {
+        $row['tags'] = $row['tags'] ? json_decode($row['tags'], true) : [];
+    }
+
+    return $rows;
 }
 
 /**
