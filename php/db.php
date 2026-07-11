@@ -488,6 +488,15 @@ function update_survey(int $survey_id, array $data): bool
 }
 
 /**
+ * アンケートを削除する
+ */
+function delete_survey(int $survey_id): bool
+{
+    $stmt = executeQuery('DELETE FROM surveys WHERE survey_id = :survey_id', [':survey_id' => $survey_id]);
+    return $stmt->rowCount() > 0;
+}
+
+/**
  * 通知済みフラグをONにする
  */
 function update_notification_flag(int $survey_id): bool

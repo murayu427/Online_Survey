@@ -55,9 +55,18 @@ $errors = [];
 // ----------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // CSRF
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         renderError('不正なリクエストです（CSRF）。', 403, 'app', 'WARNING');
+    }
+
+    if (isset($_POST['delete_survey']) && $edit_mode && !empty($survey_id)) {
+        try {
+            delete_survey((int)$survey_id);
+            header('Location: index.php');
+            exit;
+        } catch (Throwable $e) {
+            renderError('アンケートの削除に失敗しました。', 500, 'db', 'ERROR', $e, 'Survey Delete Error');
+        }
     }
 
     // 入力値取得
@@ -390,6 +399,111 @@ body {
     margin-top: 10px;
 }
 
+.survey-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.survey-heading-row h1 {
+    margin: 0;
+}
+
+.survey-heading-row form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.delete-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    padding: 20px;
+}
+
+.delete-modal-backdrop.is-open {
+    display: flex;
+}
+
+.delete-modal {
+    background: #ffffff;
+    color: #111827;
+    width: min(420px, 100%);
+    border-radius: 14px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.24);
+    padding: 24px;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+.delete-modal h3 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    color: #111827;
+}
+
+.delete-modal p {
+    margin: 0 0 18px;
+    line-height: 1.6;
+    color: #4b5563;
+}
+
+.delete-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.delete-modal-actions .btn-cancel {
+    background: #6b7280;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+.delete-modal-actions .btn-confirm-delete {
+    background: #dc2626;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.survey-container button,
+.survey-container input[type="submit"],
+.survey-container input[type="button"] {
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, filter 0.18s ease, background-color 0.18s ease;
+    transform: translateY(0);
+}
+
+.survey-container button:hover,
+.survey-container input[type="submit"]:hover,
+.survey-container input[type="button"]:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
+    filter: brightness(1.03);
+}
+
+.survey-container button:active,
+.survey-container input[type="submit"]:active,
+.survey-container input[type="button"]:active {
+    transform: translateY(-1px) scale(0.99);
+}
+
 /* index.php と同じヘッダーを再現する強制CSS */
 header.w-full.bg-
 
@@ -437,6 +551,22 @@ header input#survey-search {
 </style>
 
 <script>
+function openDeleteModal() {
+    document.getElementById('deleteModalBackdrop').classList.add('is-open');
+}
+
+function closeDeleteModal(event = null) {
+    const backdrop = document.getElementById('deleteModalBackdrop');
+    if (event && event.target !== backdrop && !backdrop.contains(event.target)) {
+        return;
+    }
+    backdrop.classList.remove('is-open');
+}
+
+function submitDeleteSurvey() {
+    document.getElementById('delete-survey-form').submit();
+}
+
 // 質問追加（既存構造に合わせる）
 let questionIndex = 1;   // ★ グローバルで管理する
 
@@ -625,7 +755,27 @@ window.addEventListener("load", () => {
 
 <div class="survey-container">
 
-<h1><?= $edit_mode ? 'アンケート編集' : 'アンケート新規作成' ?></h1>
+<div class="survey-heading-row">
+    <h1><?= $edit_mode ? 'アンケート編集' : 'アンケート新規作成' ?></h1>
+    <?php if ($edit_mode): ?>
+        <form method="post" action="" id="delete-survey-form" class="inline-flex">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
+            <input type="hidden" name="delete_survey" value="1">
+            <button type="button" class="btn-delete" onclick="openDeleteModal()">アンケート削除</button>
+        </form>
+    <?php endif; ?>
+</div>
+
+<div id="deleteModalBackdrop" class="delete-modal-backdrop" onclick="closeDeleteModal(event)">
+    <div class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+        <h3 id="deleteModalTitle">アンケートを削除しますか？</h3>
+        <p>この操作は取り消せません。削除したアンケートは一覧から消えます。</p>
+        <div class="delete-modal-actions">
+            <button type="button" class="btn-cancel" onclick="closeDeleteModal()">キャンセル</button>
+            <button type="button" class="btn-confirm-delete" onclick="submitDeleteSurvey()">削除する</button>
+        </div>
+    </div>
+</div>
 
 <?php if (!empty($errors)): ?>
     <div style="background:#fee; padding:10px; border:1px solid #f99; margin-bottom:20px;">
