@@ -3,9 +3,15 @@ session_start();
 
 // POST のアンケートデータを受け取る
 $data = $_POST;
+$edit_mode = isset($data['edit_mode']) && $data['edit_mode'] === '1';
+$survey_id = isset($data['survey_id']) && $data['survey_id'] !== '' ? (int)$data['survey_id'] : 0;
+$survey_key = $data['survey_key'] ?? '';
 
 // セッションに一時保存（完了画面で使う）
 $_SESSION['survey_input'] = $data;
+$_SESSION['survey_edit_mode'] = $edit_mode;
+$_SESSION['survey_edit_id'] = $survey_id;
+$_SESSION['survey_edit_key'] = $survey_key;
 ?>
 <!DOCTYPE html>
 <html lang="ja">
@@ -40,6 +46,9 @@ $_SESSION['survey_input'] = $data;
         <form action="survey_complete.php" method="POST">
     <input type="hidden" name="csrf_token"
            value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
+    <input type="hidden" name="edit_mode" value="<?= htmlspecialchars($edit_mode ? '1' : '0', ENT_QUOTES, 'UTF-8') ?>">
+    <input type="hidden" name="survey_id" value="<?= htmlspecialchars((string)$survey_id, ENT_QUOTES, 'UTF-8') ?>">
+    <input type="hidden" name="survey_key" value="<?= htmlspecialchars((string)$survey_key, ENT_QUOTES, 'UTF-8') ?>">
 
     <button type="submit" class="btn-submit">
         この内容で作成する

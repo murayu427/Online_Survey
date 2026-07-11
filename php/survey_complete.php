@@ -25,6 +25,12 @@ if (!$input) {
     renderError('アンケート情報が見つかりません。最初からやり直してください。', 400, 'app', 'WARNING');
 }
 
+$edit_mode = !empty($_POST['edit_mode']) || !empty($_SESSION['survey_edit_mode']);
+$survey_id = isset($_POST['survey_id']) && $_POST['survey_id'] !== ''
+    ? (int)$_POST['survey_id']
+    : (!empty($_SESSION['survey_edit_id']) ? (int)$_SESSION['survey_edit_id'] : 0);
+$survey_key = $_POST['survey_key'] ?? ($_SESSION['survey_edit_key'] ?? '');
+
 try {
 
     /* ------------------------------
@@ -73,20 +79,33 @@ try {
     }
 
     /* ------------------------------
-       DB 登録（insert_survey）
+       DB 登録
     ------------------------------ */
-    $question_key = insert_survey(
-        $creator_id,
-        $title,
-        $spec,
-        $start,
-        $end
-    );
+    if ($edit_mode && $survey_id > 0) {
+        update_survey($survey_id, [
+            'title' => $title,
+            'survey_spec' => $spec,
+            'start_at' => $start,
+            'end_at' => $end,
+        ]);
+        $question_key = $survey_key;
+    } else {
+        $question_key = insert_survey(
+            $creator_id,
+            $title,
+            $spec,
+            $start,
+            $end
+        );
+    }
 
     /* ------------------------------
        一時データ削除
     ------------------------------ */
     unset($_SESSION['survey_input']);
+    unset($_SESSION['survey_edit_mode']);
+    unset($_SESSION['survey_edit_id']);
+    unset($_SESSION['survey_edit_key']);
 
 } catch (Throwable $e) {
 

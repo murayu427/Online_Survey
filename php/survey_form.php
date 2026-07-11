@@ -639,7 +639,9 @@ window.addEventListener("load", () => {
 
 <form action="survey_confirm.php" method="POST">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
-    <input type="hidden" name="survey_id" value="<?= htmlspecialchars($survey_id ?? '', ENT_QUOTES, 'UTF-8') ?>">
+    <input type="hidden" name="edit_mode" value="<?= htmlspecialchars($edit_mode ? '1' : '0', ENT_QUOTES, 'UTF-8') ?>">
+    <input type="hidden" name="survey_id" value="<?= htmlspecialchars((string)($survey_id ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+    <input type="hidden" name="survey_key" value="<?= htmlspecialchars((string)($survey_key ?? ''), ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- 1. タイトル -->
     <div class="section">
