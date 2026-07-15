@@ -228,7 +228,7 @@ $comment_list_data = get_comments_by_survey_id((int)$survey_id);
                     <button type="submit" name="commentSend" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded lift-button">送信</button>
                 </form>
             <?php else:?>
-                <p>コメントはログイン後に投稿できます</p>
+                <p>コメント，いいねはログイン後に投稿できます</p>
             <?php endif?>
             <div id="comment-list" style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
             <?php foreach ($comment_list_data as $row) { 
@@ -238,9 +238,15 @@ $comment_list_data = get_comments_by_survey_id((int)$survey_id);
                 <div class="comment-item">
                     <p style="margin-top: 0;"><strong><?= htmlspecialchars($name) ?></strong></p>
                     <p><?= nl2br(htmlspecialchars($comment)) ?></p>
-                    <button type="button" onclick="toggleLike(<?= (int)$row['comment_id'] ?>)" class="mt-2 border border-gray-300 px-3 py-1 rounded-full text-sm lift-button">
-                        👍 <span id="like-count-<?= (int)$row['comment_id'] ?>"><?= $row["like_count"] ?? 0 ?></span>
-                    </button>
+                    <?php if(!is_null($user_id)):?>
+                        <button type="button" onclick="toggleLike(<?= (int)$row['comment_id'] ?>)" class="mt-2 border border-gray-300 px-3 py-1 rounded-full text-sm lift-button">
+                            👍 <span id="like-count-<?= (int)$row['comment_id'] ?>"><?= $row["like_count"] ?? 0 ?></span>
+                        </button>
+                    <?php else:?>
+                        <p class="mt-2 border border-gray-300 px-3 py-1 rounded-full text-sm lift-button">
+                            👍 ログイン後有効 <span id="like-count-<?= (int)$row['comment_id'] ?>"><?= $row["like_count"] ?? 0 ?></span>
+                        </p>
+                    <?php endif?>
                 </div>
             <?php } ?>
             </div>
