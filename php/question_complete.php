@@ -11,7 +11,7 @@ if (!function_exists('h')) {
 }
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    start_sess();
 }
 
 $csrf_token = $_SESSION['csrf_token'] ?? '';
@@ -48,6 +48,13 @@ $success = upsert_response($survey_id, $user_id, $answer_data);
 if ($success) {
     unset($_SESSION['autosave']);
     unset($_SESSION['csrf_token']);
+    //未ログインの場合、セッションに回答したアンケートIDを保存しておく
+    if (!isset($_SESSION['user_id'])) {
+        $_SESSION['answered_surveys'] = $_SESSION['answered_surveys'] ?? [];
+        if (!in_array($survey_id, $_SESSION['answered_surveys'], true)) {
+            $_SESSION['answered_surveys'][] = $survey_id;
+        }
+    }
 
     echo "<title>送信完了 - " . h($survey_title) . "</title>";
     echo "<head><link rel='stylesheet' href='../css/question_complete.css'><link rel='stylesheet' href='../css/footer.css'>";

@@ -189,6 +189,13 @@ try {
 } catch (Exception $e) {
     error_log("データ抽出エラー: " . $e->getMessage());
 }
+
+// フラッシュメッセージの取得と削除
+$alert_message = '';
+if (!empty($_SESSION['flash_message'])) {
+    $alert_message = $_SESSION['flash_message'];
+    unset($_SESSION['flash_message']); // 一度取得したらセッションから消す
+}
 ?>
 <!DOCTYPE html>
 <html lang="ja">

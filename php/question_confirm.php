@@ -18,7 +18,7 @@ if ($q_key === '') {
 }
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    start_sess();
 }
 
 $csrf_token = $_SESSION['csrf_token'] ?? '';
