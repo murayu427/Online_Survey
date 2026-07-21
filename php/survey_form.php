@@ -345,49 +345,56 @@ include 'header.php';
 body {
     font-family: "Yu Gothic", sans-serif;
     background: #1e2d5a;
-    color: #111827;
+    color: #ffffff;
 }
 
+
+/* フォーム外枠（白 → #1e2d5a） */
 .survey-container {
     margin-top: 100px;
     max-width: 700px;
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 40px;
-    background: #ffffff;
+    background: #1e2d5a; /* ← 指定色 */
     padding: 25px;
     border-radius: 12px;
     box-shadow: 0 0 15px rgba(0,0,0,0.15);
-    border: 1px solid #dddddd;
+    border: 1px solid #334155; /* 濃い枠線で馴染ませる */
+}
+
+/* セクションタイトル */
+.section h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #ffffff; /* 白文字に変更 */
+}
+
+/* 入力欄（白 → #1e2d5a） */
+.input-text,
+.input-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #475569; /* 少し明るい紺で枠線 */
+    border-radius: 6px;
+    margin-top: 5px;
+    background: #2a3b7a; /* ← 指定色 */
+    color: #ffffff; /* 白文字 */
+}
+
+/* 質問ブロック（白 → #1e2d5a） */
+.question-block {
+    border: 1px solid #475569;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    background: #1e2d5a; /* ← 指定色 */
+    color: #ffffff;
 }
 
 
 .section {
     margin-bottom: 30px;
-}
-
-.section h2 {
-    font-size: 18px;
-    margin-bottom: 10px;
-    color: #111827;
-}
-
-.input-text, .input-select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #aaaaaa;
-    border-radius: 6px;
-    margin-top: 5px;
-    background: #ffffff;
-    color: #111827;
-}
-
-.question-block {
-    border: 1px solid #dddddd;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 6px;
-    background: #ffffff;
 }
 
 /* 質問ボタン（質問1 / 質問2） */
@@ -862,7 +869,7 @@ window.addEventListener("load", () => {
 
     <!-- 4. タグ -->
     <div class="section">
-        <h2>タグ（カンマ区切り）</h2>
+        <h2>3. タグ（カンマ区切り） 記入例:PC,容量,スペック</h2>
         <input type="text" name="tags" class="input-text"
                value="<?= htmlspecialchars(implode(',', $spec['Survey_tag'] ?? []), ENT_QUOTES, 'UTF-8') ?>">
     </div>
