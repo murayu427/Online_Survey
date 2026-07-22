@@ -2,6 +2,9 @@
 ini_set('display_errors', 0);
 error_reporting(0);
 
+// ⭕️ 日本時間に設定（日時のズレを解消）
+date_default_timezone_set('Asia/Tokyo');
+
 // =========================================================================
 // 1. 独立した認証チェック
 // =========================================================================
@@ -10,7 +13,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: signin.php');
     exit;
 }
 
@@ -56,7 +59,6 @@ try {
 // 4. アンケートIDの取得（判定をより柔軟に強化）
 // =========================================================================
 try {
-    // ⭕️ 修正：文字列の完全一致(LIKE含む)や、大文字小文字の違い、UUIDキャストに幅広く対応
     $sql = "SELECT survey_id FROM surveys 
             WHERE question_key::text = :key 
                OR result_key::text = :key 
@@ -73,7 +75,6 @@ try {
 
     if (!$survey) {
         http_response_code(400);
-        // デバッグしやすくするため、受け取ったキーを画面に出します
         echo "400 Bad Request: 該当するアンケートが見つかりません。(送信されたキー: " . htmlspecialchars($key) . ")";
         exit;
     }
@@ -100,7 +101,6 @@ try {
     $results = $stmt->fetchAll();
 
     if (empty($results)) {
-        // 回答データが1件もない場合の受け皿
         header('Content-Description: File Transfer'); 
         header('Content-Type: text/csv; charset=utf-8'); 
         header('Content-Disposition: attachment; filename="survey_result_' . $survey_id . '_empty.csv"'); 
@@ -145,7 +145,7 @@ if ($format === 'csv') {
                     $a_val = implode(', ', $a_val);
                 }
                 $a_val = str_replace(["\r\n", "\r", "\n"], " ", (string)$a_val);
-                $readable_answers[] = "{$q_key}: {$a_val}";
+                $readable_answers[] = $a_val;
             }
         }
         
@@ -166,69 +166,124 @@ if ($format === 'csv') {
     exit;
 }
 
-// PDF出力
+// =========================================================================
+// 7. フォーマット別の出力制御（PDF用プリント画面）
+// =========================================================================
 if ($format === 'pdf') {
-    $text = "Survey Report (Survey ID: " . $survey_id . ")\n";
-    $text .= "---------------------------------------------------------------------------------\n";
-    $format_string = " %-12s | %-16s | %s\n";
-    $text .= sprintf($format_string, "USER ID", "ANSWER DATE", "ANSWERS");
-    $text .= "---------------------------------------------------------------------------------\n";
-    
-    foreach ($results as $row) {
-        $user_display_id = !empty($row['account_name']) ? (string)$row['account_name'] : 'Guest';
-        $formatted_date = !empty($row['answered_at']) ? date('Y/m/d H:i', strtotime($row['answered_at'])) : 'Unknown';
-
-        $answer_array = [];
-        if (!empty($row['answer_data'])) {
-            if (is_string($row['answer_data'])) {
-                $answer_array = json_decode($row['answer_data'], true) ?? [];
-            } else {
-                $answer_array = $row['answer_data'];
+    ?>
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <title>アンケート結果レポート (ID: <?php echo $survey_id; ?>)</title>
+        <style>
+            body {
+                font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", MeiRyo, sans-serif;
+                margin: 20px;
+                color: #333;
             }
-        }
-
-        $readable_answers = [];
-        if (is_array($answer_array)) {
-            foreach ($answer_array as $q_key => $a_val) {
-                if (is_array($a_val)) { $a_val = implode(', ', $a_val); }
-                $a_val = str_replace(["\r\n", "\r", "\n", "(", ")"], " ", (string)$a_val);
-                if (preg_match('/[ぁ-んァ-ヶー一-龠]/u', $a_val)) { $a_val = '[JP Answer]'; }
-                $readable_answers[] = "{$q_key}:{$a_val}";
+            h1 {
+                font-size: 20px;
+                border-bottom: 2px solid #333;
+                padding-bottom: 8px;
             }
-        }
-        $answer_text = !empty($readable_answers) ? implode('  ', $readable_answers) : 'None';
+            .meta-info {
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #666;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 10px;
+            }
+            th, td {
+                border: 1px solid #ccc;
+                padding: 10px;
+                text-align: left;
+                font-size: 13px;
+                word-break: break-all;
+            }
+            th {
+                background-color: #f2f2f2;
+                font-weight: bold;
+            }
+            tr:nth-child(even) {
+                background-color: #fafafa;
+            }
+            @media print {
+                .no-print {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="no-print" style="margin-bottom: 15px; padding: 10px; background: #eef6ff; border: 1px solid #b6d4fe; border-radius: 4px;">
+            <strong>【PDF化の手順】</strong> 画面が開くと自動的に印刷画面が出ます。「送信先」または「プリンター」で <strong>「PDFに保存」</strong> を選択して保存してください。
+            <button onclick="window.print()" style="margin-left: 10px; cursor: pointer;">再表示</button>
+        </div>
 
-        $text .= sprintf($format_string, $user_display_id, $formatted_date, $answer_text);
-    }
-    $text .= "---------------------------------------------------------------------------------\n";
-    
-    $stream = "BT\n/F1 10 Tf\n40 800 Td\n14 TL\n";
-    foreach (explode("\n", str_replace("\r\n", "\n", $text)) as $line) {
-        $stream .= "(" . addcslashes($line, '()\\') . ") Tj T*\n";
-    }
-    $stream .= "ET";
-    
-    $chunks = [];
-    $chunks[0] = "%PDF-1.4\n";
-    $chunks[1] = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
-    $chunks[2] = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
-    $chunks[3] = "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Courier >> >> >> >>\nendobj\n";
-    $chunks[4] = "4 0 obj\n<< /Length " . strlen($stream) . " >>\nstream\n" . $stream . "\nendstream\nendobj\n";
+        <h1>アンケート回答結果レポート (ID: <?php echo $survey_id; ?>)</h1>
+        <div class="meta-info">出力日時: <?php echo date('Y年m月d日 H:i'); ?></div>
 
-    $offsets = [];
-    $pdf_data = $chunks[0];
-    for ($i = 1; $i <= 4; $i++) {
-        $offsets[$i] = strlen($pdf_data);
-        $pdf_data .= $chunks[$i];
-    }
-    $xref_pos = strlen($pdf_data);
-    $pdf_data .= "xref\n0 5\n0000000000 65535 f \n";
-    for ($i = 1; $i <= 4; $i++) { $pdf_data .= sprintf("%010d 00000 n \n", $offsets[$i]); }
-    $pdf_data .= "trailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n" . $xref_pos . "\n%%EOF";
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 8%;">No.</th>
+                    <th style="width: 22%;">ユーザー名</th>
+                    <th style="width: 50%;">回答内容</th>
+                    <th style="width: 20%;">回答日時</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $count = 1;
+                foreach ($results as $row) {
+                    $user_display_id = !empty($row['account_name']) ? $row['account_name'] : '匿名(未ログイン)';
+                    $formatted_date = !empty($row['answered_at']) ? date('Y/m/d H:i', strtotime($row['answered_at'])) : '未回答';
 
-    header('Content-Description: File Transfer');
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="survey_report_' . $survey_id . '.pdf"');
-    echo $pdf_data;
+                    $answer_array = [];
+                    if (!empty($row['answer_data'])) {
+                        if (is_string($row['answer_data'])) {
+                            $answer_array = json_decode($row['answer_data'], true) ?? [];
+                        } else {
+                            $answer_array = $row['answer_data'];
+                        }
+                    }
+
+                    $readable_answers = [];
+                    if (is_array($answer_array)) {
+                        foreach ($answer_array as $q_key => $a_val) {
+                            if (is_array($a_val)) {
+                                $a_val = implode(', ', $a_val);
+                            }
+                            $readable_answers[] = htmlspecialchars((string)$a_val, ENT_QUOTES, 'UTF-8');
+                        }
+                    }
+                    $answer_text = !empty($readable_answers) ? implode(' <br> ', $readable_answers) : '回答なし';
+                ?>
+                    <tr>
+                        <td><?php echo $count; ?></td>
+                        <td><?php echo htmlspecialchars($user_display_id, ENT_QUOTES, 'UTF-8'); ?></td>
+                        <td><?php echo $answer_text; ?></td>
+                        <td><?php echo $formatted_date; ?></td>
+                    </tr>
+                <?php
+                    $count++;
+                }
+                ?>
+            </tbody>
+        </table>
+
+        <script>
+            // ページ読み込み完了後、自動的に印刷ダイアログ（PDF保存）を起動
+            window.onload = function() {
+                window.print();
+            };
+        </script>
+    </body>
+    </html>
+    <?php
     exit;
 }
