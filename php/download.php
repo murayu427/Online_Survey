@@ -2,7 +2,7 @@
 ini_set('display_errors', 0);
 error_reporting(0);
 
-// ⭕️ 日本時間に設定（日時のズレを解消）
+// 日本時間に設定（日時のズレを解消）
 date_default_timezone_set('Asia/Tokyo');
 
 // =========================================================================
@@ -32,7 +32,7 @@ if (!isset($_GET['format']) || !in_array($_GET['format'], ['csv', 'pdf'], true))
     exit;
 }
 
-$key = trim($_GET['key']); // 前後の余計な空白を削除
+$key = trim($_GET['key']);
 $format = $_GET['format'];
 $current_user_id = (int)$_SESSION['user_id'];
 
@@ -56,10 +56,10 @@ try {
 }
 
 // =========================================================================
-// 4. アンケートIDの取得（判定をより柔軟に強化）
+// 4. アンケートIDおよびタイトルの取得
 // =========================================================================
 try {
-    $sql = "SELECT survey_id FROM surveys 
+    $sql = "SELECT survey_id, title FROM surveys 
             WHERE question_key::text = :key 
                OR result_key::text = :key 
                OR question_key::text LIKE :key_like
@@ -80,6 +80,7 @@ try {
     }
 
     $survey_id = (int)$survey['survey_id'];
+    $survey_title = !empty($survey['title']) ? $survey['title'] : 'アンケート';
 } catch (Exception $e) {
     http_response_code(500);
     echo "500 Internal Server Error: アンケート情報の取得中にエラーが発生しました。";
@@ -87,7 +88,7 @@ try {
 }
 
 // =========================================================================
-// 5. データ集計（LEFT JOINでアカウント名を取得）
+// 5. データ集計
 // =========================================================================
 try {
     $sql = 'SELECT r.response_id, r.user_id, r.answer_data, r.answered_at, u.account_name 
@@ -111,6 +112,32 @@ try {
     http_response_code(500);
     echo "500 Internal Server Error: データ取得中にエラーが発生しました。";
     exit;
+}
+
+// -------------------------------------------------------------------------
+// 5.5. PDF用グラフ集計ロジック（回答値の出現度数をカウント）
+// -------------------------------------------------------------------------
+$summary_counts = [];
+foreach ($results as $row) {
+    $answer_array = [];
+    if (!empty($row['answer_data'])) {
+        if (is_string($row['answer_data'])) {
+            $answer_array = json_decode($row['answer_data'], true) ?? [];
+        } else {
+            $answer_array = $row['answer_data'];
+        }
+    }
+    if (is_array($answer_array)) {
+        foreach ($answer_array as $val) {
+            if (is_array($val)) {
+                $val = implode(', ', $val);
+            }
+            $val = trim((string)$val);
+            if ($val !== '') {
+                $summary_counts[$val] = ($summary_counts[$val] ?? 0) + 1;
+            }
+        }
+    }
 }
 
 // =========================================================================
@@ -170,12 +197,16 @@ if ($format === 'csv') {
 // 7. フォーマット別の出力制御（PDF用プリント画面）
 // =========================================================================
 if ($format === 'pdf') {
+    $chart_labels = array_keys($summary_counts);
+    $chart_data = array_values($summary_counts);
     ?>
     <!DOCTYPE html>
     <html lang="ja">
     <head>
         <meta charset="UTF-8">
-        <title>アンケート結果レポート (ID: <?php echo $survey_id; ?>)</title>
+        <title><?php echo htmlspecialchars($survey_title, ENT_QUOTES, 'UTF-8'); ?>_回答結果レポート</title>
+        <!-- Chart.js（グラフ描写ライブラリ）の読み込み -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <style>
             body {
                 font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", MeiRyo, sans-serif;
@@ -187,21 +218,44 @@ if ($format === 'pdf') {
                 border-bottom: 2px solid #333;
                 padding-bottom: 8px;
             }
+            h2 {
+                font-size: 16px;
+                margin-top: 30px;
+                border-left: 4px solid #1F4E78;
+                padding-left: 8px;
+                color: #1F4E78;
+            }
             .meta-info {
-                margin-bottom: 20px;
+                margin-bottom: 15px;
                 font-size: 14px;
                 color: #666;
+            }
+            .chart-box {
+                width: 100%;
+                max-width: 650px;
+                height: 280px;
+                margin: 15px auto 30px auto;
+                padding: 15px;
+                background: #f9f9f9;
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                page-break-inside: avoid; /* グラフの途中でページ跨ぎを防止 */
             }
             table {
                 width: 100%;
                 border-collapse: collapse;
                 margin-top: 10px;
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
             }
             th, td {
                 border: 1px solid #ccc;
-                padding: 10px;
+                padding: 8px 10px;
                 text-align: left;
-                font-size: 13px;
+                font-size: 12px;
                 word-break: break-all;
             }
             th {
@@ -215,18 +269,25 @@ if ($format === 'pdf') {
                 .no-print {
                     display: none;
                 }
+                body {
+                    margin: 0;
+                }
             }
         </style>
     </head>
     <body>
         <div class="no-print" style="margin-bottom: 15px; padding: 10px; background: #eef6ff; border: 1px solid #b6d4fe; border-radius: 4px;">
-            <strong>【PDF化の手順】</strong> 画面が開くと自動的に印刷画面が出ます。「送信先」または「プリンター」で <strong>「PDFに保存」</strong> を選択して保存してください。
+            <strong>【PDF保存の手順】</strong> グラフ描画後に印刷ダイアログが開きます。「送信先」で <strong>「PDFに保存」</strong> を選択してください。
             <button onclick="window.print()" style="margin-left: 10px; cursor: pointer;">再表示</button>
         </div>
 
-        <h1>アンケート回答結果レポート (ID: <?php echo $survey_id; ?>)</h1>
-        <div class="meta-info">出力日時: <?php echo date('Y年m月d日 H:i'); ?></div>
+        <h1>【<?php echo htmlspecialchars($survey_title, ENT_QUOTES, 'UTF-8'); ?>】回答結果レポート</h1>
+        <div class="meta-info">
+            総回答数: <strong><?php echo count($results); ?>件</strong> | 出力日時: <?php echo date('Y年m月d日 H:i'); ?>
+        </div>
 
+        <!-- ⭕️ 1. 回答データ一覧テーブル（先） -->
+        <h2>回答データ一覧</h2>
         <table>
             <thead>
                 <tr>
@@ -276,10 +337,49 @@ if ($format === 'pdf') {
             </tbody>
         </table>
 
+        <!-- ⭕️ 2. 回答集計グラフ（後） -->
+        <h2>回答集計グラフ</h2>
+        <div class="chart-box">
+            <canvas id="summaryChart"></canvas>
+        </div>
+
         <script>
-            // ページ読み込み完了後、自動的に印刷ダイアログ（PDF保存）を起動
+            // グラフ用データの受渡し
+            const labels = <?php echo json_encode($chart_labels, JSON_UNESCAPED_UNICODE); ?>;
+            const dataValues = <?php echo json_encode($chart_data); ?>;
+
+            // Chart.js グラフ描画設定
+            const ctx = document.getElementById('summaryChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar', // 棒グラフ
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '回答件数',
+                        data: dataValues,
+                        backgroundColor: 'rgba(31, 78, 120, 0.75)',
+                        borderColor: 'rgba(31, 78, 120, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false, // 印刷時にズレないようアニメーションオフ
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+
+            // 描画完了を少しだけ待ってから自動印刷（PDF化）を実行
             window.onload = function() {
-                window.print();
+                setTimeout(function() {
+                    window.print();
+                }, 300);
             };
         </script>
     </body>
